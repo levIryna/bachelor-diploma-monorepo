@@ -1,0 +1,1 @@
+export { DdItemPage } from './DdItemPage';

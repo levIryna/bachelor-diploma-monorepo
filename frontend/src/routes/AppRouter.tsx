@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthenticatedLayout } from '../layouts/AuthenticatedLayout';
 import { MainPage } from '../pages/MainPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
+import { DdItemPage } from '../pages/DdItemPage';
+import { DdListPage } from '../pages/DdListPage';
 import { RpzItemPage } from '../pages/RpzItemPage';
 import { RpzListPage } from '../pages/RpzListPage';
 import { ADMIN_ROLE } from '../mocks/roles';
@@ -19,7 +21,8 @@ export function AppRouter() {
         <Route element={<AuthenticatedLayout />}>
           <Route path={paths.rpz} element={<RpzListPage />} />
           <Route path={`${paths.rpz}/:id`} element={<RpzItemPage />} />
-          <Route path={paths.procurements} element={<PlaceholderPage title="ДД" />} />
+          <Route path={paths.procurements} element={<DdListPage />} />
+          <Route path={`${paths.procurements}/:id`} element={<DdItemPage />} />
           <Route path={paths.analytics} element={<PlaceholderPage title="Аналітика" />} />
           <Route path={paths.reports} element={<PlaceholderPage title="Звіти" />} />
           <Route element={<RequireRole role={ADMIN_ROLE} />}>
