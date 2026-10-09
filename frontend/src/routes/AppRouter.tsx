@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthenticatedLayout } from '../layouts/AuthenticatedLayout';
 import { MainPage } from '../pages/MainPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
+import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { DdItemPage } from '../pages/DdItemPage';
 import { DdListPage } from '../pages/DdListPage';
 import { RpzItemPage } from '../pages/RpzItemPage';
@@ -23,8 +24,8 @@ export function AppRouter() {
           <Route path={`${paths.rpz}/:id`} element={<RpzItemPage />} />
           <Route path={paths.procurements} element={<DdListPage />} />
           <Route path={`${paths.procurements}/:id`} element={<DdItemPage />} />
-          <Route path={paths.analytics} element={<PlaceholderPage title="Аналітика" />} />
-          <Route path={paths.reports} element={<PlaceholderPage title="Звіти" />} />
+          <Route path={paths.reports} element={<AnalyticsPage />} />
+          <Route path={paths.analytics} element={<Navigate to={paths.reports} replace />} />
           <Route element={<RequireRole role={ADMIN_ROLE} />}>
             <Route
               path={paths.administration}
