@@ -1,10 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthenticatedLayout } from '../layouts/AuthenticatedLayout';
-import { HomePage } from '../pages/HomePage';
+import { MainPage } from '../pages/MainPage';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
-import { WelcomePage } from '../pages/WelcomePage';
 import { ADMIN_ROLE } from '../mocks/roles';
-import { GuestOnly } from './GuestOnly';
 import { paths } from './paths';
 import { RequireAuth } from './RequireAuth';
 import { RequireRole } from './RequireRole';
@@ -12,13 +10,11 @@ import { RequireRole } from './RequireRole';
 export function AppRouter() {
   return (
     <Routes>
-      <Route element={<GuestOnly />}>
-        <Route path={paths.welcome} element={<WelcomePage />} />
-      </Route>
+      <Route path={paths.home} element={<MainPage />} />
+      <Route path="/home" element={<Navigate to={paths.home} replace />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path={paths.home} element={<HomePage />} />
           <Route path={paths.analytics} element={<PlaceholderPage title="Аналітика" />} />
           <Route path={paths.procurements} element={<PlaceholderPage title="Закупівлі" />} />
           <Route path={paths.reports} element={<PlaceholderPage title="Звіти" />} />
@@ -31,7 +27,7 @@ export function AppRouter() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to={paths.welcome} replace />} />
+      <Route path="*" element={<Navigate to={paths.home} replace />} />
     </Routes>
   );
 }

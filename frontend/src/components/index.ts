@@ -1,4 +1,6 @@
+export { Divider } from './Divider/Divider';
 export { Navigation } from './Navigation/Navigation';
+export { UserAccountBadge } from './UserAccountBadge/UserAccountBadge';
 export { Button } from './Button/Button';
 export { KpiCard } from './KpiCard/KpiCard';
 export { Dropdown, type DropdownItem } from './Dropdown/Dropdown';
