@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { ADMIN_ROLE, hasRole } from '../../mocks/roles';
+import { useHasRole } from '../../hooks/useUserAccess';
+import { ADMIN_ROLE } from '../../mocks/roles';
 import { paths } from '../../routes/paths';
 
 type NavItem = {
@@ -10,9 +11,9 @@ type NavItem = {
 
 const commonTabs: NavItem[] = [
   { to: paths.home, label: 'Головна', end: true },
-  { to: paths.analytics, label: 'Аналітика' },
-  { to: paths.procurements, label: 'Закупівлі' },
-  { to: paths.reports, label: 'Звіти' },
+  { to: paths.rpz, label: 'РПЗ' },
+  { to: paths.procurements, label: 'ДД' },
+  { to: paths.reports, label: 'Аналітика' },
 ];
 
 const adminTab: NavItem = {
@@ -30,7 +31,8 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 }
 
 export function Navigation() {
-  const tabs = hasRole(ADMIN_ROLE) ? [...commonTabs, adminTab] : commonTabs;
+  const isAdmin = useHasRole(ADMIN_ROLE);
+  const tabs = isAdmin ? [...commonTabs, adminTab] : commonTabs;
 
   return (
     <nav aria-label="Головна навігація" className="hidden md:flex items-center gap-6">

@@ -19,8 +19,8 @@ export function TooltipIcon({ text, className = '' }: TooltipIconProps) {
       <span
         role="tooltip"
         className={[
-          'pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-64 -translate-x-1/2',
-          'rounded-lg bg-[var(--color-text-primary)] p-2.5 text-xs leading-snug text-[var(--color-surface)] shadow-xl',
+          'pointer-events-none absolute top-full right-0 z-20 mt-2 hidden w-64 max-w-[min(16rem,calc(100vw-2rem))]',
+          'rounded-lg bg-[var(--color-text-primary)] p-2.5 text-left text-xs leading-snug text-[var(--color-surface)] shadow-xl',
           'group-hover:block group-focus-within:block',
         ].join(' ')}
       >

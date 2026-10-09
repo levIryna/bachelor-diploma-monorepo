@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { hasRole } from '../mocks/roles';
+import { useHasRole } from '../hooks/useUserAccess';
 import { paths } from './paths';
 
 type RequireRoleProps = {
@@ -7,7 +7,9 @@ type RequireRoleProps = {
 };
 
 export function RequireRole({ role }: RequireRoleProps) {
-  if (!hasRole(role)) {
+  const allowed = useHasRole(role);
+
+  if (!allowed) {
     return <Navigate to={paths.home} replace />;
   }
 

@@ -1,9 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { isUserLoggedIn } from '../mocks/auth';
+import { useAppContext } from '../context/AppContext';
 import { paths } from './paths';
 
 export function RequireAuth() {
-  if (!isUserLoggedIn()) {
+  const { isLoggedIn } = useAppContext();
+
+  if (!isLoggedIn) {
     return <Navigate to={paths.welcome} replace />;
   }
 

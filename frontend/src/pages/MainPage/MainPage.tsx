@@ -11,10 +11,10 @@ import {
   TooltipIcon,
   UserAccountBadge,
 } from '../../components';
+import { useAppContext } from '../../context/AppContext';
 import { useDepartments } from '../../hooks/useDepartments';
+import { useCanSelectDepartment, useUserRole } from '../../hooks/useUserAccess';
 import { useYears } from '../../hooks/useYears';
-import { isUserLoggedIn } from '../../mocks/auth';
-import { canSelectDepartment, getUserRole } from '../../mocks/roles';
 import { getUserInitials } from '../../mocks/user';
 
 const MOCK_KPI_CARDS = [
@@ -29,7 +29,9 @@ const MOCK_KPI_CARDS = [
 ] as const;
 
 export function MainPage() {
-  const loggedIn = isUserLoggedIn();
+  const { isLoggedIn, setLoggedIn } = useAppContext();
+  const userRole = useUserRole();
+  const showDepartments = useCanSelectDepartment();
   const years = useYears();
   const departments = useDepartments();
 
@@ -37,21 +39,20 @@ export function MainPage() {
   const [department, setDepartment] = useState(departments[0]?.value ?? 'all');
 
   const yearItems = years.map((y) => ({ value: y, label: y }));
-  const showDepartments = loggedIn && canSelectDepartment();
 
   return (
     <div className="flex min-h-svh flex-col bg-[var(--color-canvas)]">
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-8">
-            <EnterpriseBrand companyName="ТОВ «Приклад»" />
-            {loggedIn ? <Navigation /> : null}
+            <EnterpriseBrand companyName="ТОВ 'Укрпромінвест'" />
+            {isLoggedIn ? <Navigation /> : null}
           </div>
           <div className="flex shrink-0 items-center gap-4">
-            {loggedIn ? (
-              <UserAccountBadge initials={getUserInitials()} role={getUserRole()} />
+            {isLoggedIn ? (
+              <UserAccountBadge initials={getUserInitials()} role={userRole} />
             ) : (
-              <Button text="Залогуватись" onClick={() => undefined} />
+              <Button text="Залогуватись" onClick={() => setLoggedIn(true)} />
             )}
           </div>
         </div>
@@ -62,12 +63,7 @@ export function MainPage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">KPI</h1>
             <TooltipIcon text="KPI (Key Performance Indicators) — ключові показники ефективності закупівель підприємства." />
-            <Dropdown
-              ariaLabel="Обрати рік"
-              items={yearItems}
-              value={year}
-              onChange={setYear}
-            />
+            <Dropdown ariaLabel="Обрати рік" items={yearItems} value={year} onChange={setYear} />
             {showDepartments ? (
               <Dropdown
                 ariaLabel="Обрати підрозділ"
