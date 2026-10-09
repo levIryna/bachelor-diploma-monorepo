@@ -1,0 +1,49 @@
+/**
+ * Design tokens — procurement analytics dashboard (Stitch / Excalidraw mock).
+ */
+:root {
+  /* Brand */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+
+  /* Secondary / charts */
+  --color-secondary-500: #0ea5e9;
+  --color-chart-indigo: #6366f1;
+  --color-success-50: #ecfdf5;
+  --color-success-700: #047857;
+  --color-success-border: #a7f3d0;
+  --color-warning-50: #fffbeb;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-border: #fde68a;
+
+  /* Surfaces & text */
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-placeholder: #94a3b8;
+
+  /* Focus & shadows */
+  --color-focus-ring: #2563eb;
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-card-hover: 0 4px 6px -1px rgb(15 23 42 / 0.08);
+
+  /* Radii */
+  --radius-button: 0.5rem;
+  --radius-card-sm: 0.75rem;
+  --radius-card-lg: 0.75rem;
+
+  /* Spacing */
+  --space-card-padding-sm: 1.25rem;
+  --space-card-padding-lg: 1.5rem;
+
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
