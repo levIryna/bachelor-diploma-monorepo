@@ -1,3 +1,4 @@
+export { Navigation } from './Navigation/Navigation';
 export { Button } from './Button/Button';
 export { KpiCard } from './KpiCard/KpiCard';
 export { Dropdown, type DropdownItem } from './Dropdown/Dropdown';
