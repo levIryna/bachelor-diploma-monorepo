@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
 import { BigCard, Dropdown } from '../../components';
+import { useYears } from '../../api/years';
 import { useDepartments } from '../../hooks/useDepartments';
-import { useYears } from '../../hooks/useYears';
+import { toOptions } from '../../utils/toOptions';
 import { ANALYTICS_SECTIONS } from './analyticsSections';
 
 export function AnalyticsPage() {
-  const years = useYears();
+  const { data: years, isLoading } = useYears();
   const departments = useDepartments();
 
-  const [year, setYear] = useState(() => years[0] ?? '2025');
+  const [year, setYear] = useState<string>();
+  const selectedYear = year ?? years?.[0] ?? '';
   const [department, setDepartment] = useState('all');
 
-  const yearItems = useMemo(() => years.map((y) => ({ value: y, label: y })), [years]);
+  const yearItems = useMemo(() => toOptions(years ?? []), [years]);
 
   return (
     <div className="space-y-6 pb-16">
@@ -25,7 +27,13 @@ export function AnalyticsPage() {
       </div>
 
       <section className="flex flex-wrap items-center gap-3">
-        <Dropdown ariaLabel="Рік" items={yearItems} value={year} onChange={setYear} />
+        <Dropdown
+          ariaLabel="Рік"
+          isLoading={isLoading}
+          items={yearItems}
+          value={selectedYear}
+          onChange={setYear}
+        />
         <Dropdown
           ariaLabel="Підрозділ"
           items={departments}
@@ -49,7 +57,7 @@ export function AnalyticsPage() {
               </h2>
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">{section.description}</p>
               <p className="mt-6 min-h-[220px] rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-muted)]/50 p-6 text-center text-sm text-[var(--color-text-muted)]">
-                Тут буде візуалізація ({year}
+                Тут буде візуалізація ({selectedYear}
                 {department !== 'all'
                   ? ` · ${departments.find((d) => d.value === department)?.label ?? department}`
                   : ''}

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Divider, Dropdown, SearchField } from '../../components';
-import { useYears } from '../../hooks/useYears';
+import { useYears } from '../../api/years';
 import { mockDdListItems } from '../../mocks/ddList';
 import { paths } from '../../routes/paths';
+import { toOptions } from '../../utils/toOptions';
 
 const TABLE_COLUMNS = [
   'Номер',
@@ -18,17 +19,18 @@ const TABLE_COLUMNS = [
 
 export function DdListPage() {
   const navigate = useNavigate();
-  const years = useYears();
-  const [year, setYear] = useState(() => years[0] ?? '2025');
+  const { data: years, isLoading } = useYears();
+  const [year, setYear] = useState<string>();
+  const selectedYear = year ?? years?.[0] ?? '';
   const [search, setSearch] = useState('');
 
-  const yearItems = useMemo(() => years.map((y) => ({ value: y, label: y })), [years]);
+  const yearItems = useMemo(() => toOptions(years ?? []), [years]);
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return mockDdListItems.filter((row) => {
-      if (row.year !== year) {
+      if (row.year !== selectedYear) {
         return false;
       }
 
@@ -51,7 +53,7 @@ export function DdListPage() {
 
       return haystack.includes(query);
     });
-  }, [search, year]);
+  }, [search, selectedYear]);
 
   return (
     <div className="space-y-6">
@@ -61,7 +63,13 @@ export function DdListPage() {
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Dropdown ariaLabel="Фільтр за роком" items={yearItems} value={year} onChange={setYear} />
+        <Dropdown
+          ariaLabel="Фільтр за роком"
+          isLoading={isLoading}
+          items={yearItems}
+          value={selectedYear}
+          onChange={setYear}
+        />
         <Button text="Додати ДД" onClick={() => navigate(`${paths.procurements}/new`)} />
       </div>
 

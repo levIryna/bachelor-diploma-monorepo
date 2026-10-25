@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Divider, Dropdown, SearchField } from '../../components';
+import { useYears } from '../../api/years';
 import { useDepartments } from '../../hooks/useDepartments';
-import { useYears } from '../../hooks/useYears';
 import { mockRpzListItems, RPZ_STATUS_FILTER_OPTIONS } from '../../mocks/rpzList';
 import { paths } from '../../routes/paths';
+import { toOptions } from '../../utils/toOptions';
 
 const TABLE_COLUMNS = [
   'Рік',
@@ -19,15 +20,16 @@ const TABLE_COLUMNS = [
 
 export function RpzListPage() {
   const navigate = useNavigate();
-  const years = useYears();
+  const { data: years, isLoading } = useYears();
   const departments = useDepartments();
 
-  const [year, setYear] = useState(() => years[0] ?? '2025');
+  const [year, setYear] = useState<string>();
+  const selectedYear = year ?? years?.[0] ?? '';
   const [department, setDepartment] = useState('all');
   const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
 
-  const yearItems = useMemo(() => years.map((y) => ({ value: y, label: y })), [years]);
+  const yearItems = useMemo(() => toOptions(years ?? []), [years]);
 
   const statusItems = RPZ_STATUS_FILTER_OPTIONS.map((item) => ({
     value: item.value,
@@ -38,7 +40,7 @@ export function RpzListPage() {
     const query = search.trim().toLowerCase();
 
     return mockRpzListItems.filter((row) => {
-      if (row.year !== year) {
+      if (row.year !== selectedYear) {
         return false;
       }
 
@@ -75,7 +77,7 @@ export function RpzListPage() {
 
       return haystack.includes(query);
     });
-  }, [department, departments, search, status, statusItems, year]);
+  }, [department, departments, search, status, statusItems, selectedYear]);
 
   return (
     <div className="space-y-6">
@@ -92,7 +94,13 @@ export function RpzListPage() {
       </div>
 
       <section className="flex flex-wrap items-center gap-3">
-        <Dropdown ariaLabel="Фільтр за роком" items={yearItems} value={year} onChange={setYear} />
+        <Dropdown
+          ariaLabel="Фільтр за роком"
+          isLoading={isLoading}
+          items={yearItems}
+          value={selectedYear}
+          onChange={setYear}
+        />
         <Dropdown
           ariaLabel="Фільтр за підрозділом"
           items={departments}

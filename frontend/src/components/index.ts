@@ -1,6 +1,7 @@
 export { FormField } from './FormField/FormField';
 export { FormSectionCard } from './FormSectionCard/FormSectionCard';
 export { Divider } from './Divider/Divider';
+export { Loader } from './Loader/Loader';
 export { SearchField } from './SearchField/SearchField';
 export { Navigation } from './Navigation/Navigation';
 export { UserAccountBadge } from './UserAccountBadge/UserAccountBadge';
@@ -9,5 +10,6 @@ export { KpiCard } from './KpiCard/KpiCard';
 export { Dropdown, type DropdownItem } from './Dropdown/Dropdown';
 export { TooltipIcon } from './TooltipIcon/TooltipIcon';
 export { EnterpriseBrand } from './EnterpriseBrand/EnterpriseBrand';
+export { PieChart } from './PieChart/PieChart';
 export { BigCard } from './BigCard/BigCard';
 export { BigCardHeader } from './BigCardHeader/BigCardHeader';

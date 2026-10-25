@@ -1,0 +1,37 @@
+{
+  "name": "diploma-backend",
+  "version": "1.0.0",
+  "description": "backend for bachelor diploma ",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "bash scripts/run-sql.sh db/migrations/001_init_schema.sql",
+    "db:seed": "bash scripts/run-sql.sh db/migrations/002_seed_dev.sql",
+    "db:seed:departments": "bash scripts/run-sql.sh db/seeds/01_departments.sql",
+    "db:migrate:roles": "bash scripts/run-sql.sh db/migrations/003_users_roles.sql",
+    "db:seed:users": "bash scripts/run-sql.sh db/seeds/02_users.sql",
+    "db:seed:contract-types": "bash scripts/run-sql.sh db/seeds/08_contract_types.sql",
+    "db:seed:ip-nkrekp": "bash scripts/run-sql.sh db/seeds/09_ip_nkrekp_items.sql",
+    "db:seed:rpz": "bash scripts/run-sql.sh db/seeds/10_procurement_plan_items.sql",
+    "db:generate:rpz": "node scripts/generate-rpz-seed.mjs",
+    "db:generate:dd": "node scripts/generate-dd-seed.mjs",
+    "db:seed:dd": "bash scripts/run-sql.sh db/seeds/11_contract_documents.sql",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

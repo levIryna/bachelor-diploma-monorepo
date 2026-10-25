@@ -8,37 +8,41 @@ import {
   EnterpriseBrand,
   KpiCard,
   Navigation,
+  PieChart,
   TooltipIcon,
   UserAccountBadge,
 } from '../../components';
 import { useAppContext } from '../../context/AppContext';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useCanSelectDepartment, useUserRole } from '../../hooks/useUserAccess';
-import { useYears } from '../../hooks/useYears';
+import { useKpiCards } from '../../api/kpiCards';
+import { useProcurementDynamics } from '../../api/procurementDynamics';
+import { useProcurementStatuses } from '../../api/procurementStatuses';
+import { useYears } from '../../api/years';
+import { getProcurementDynamicsColumnOptions } from '../../charts_config/procurementDynamicsColumn';
+import { getProcurementStatusPieOptions } from '../../charts_config/procurementStatusPie';
 import { getUserInitials } from '../../mocks/user';
-
-const MOCK_KPI_CARDS = [
-  { title: 'Заплановано — сума', value: 'mock', description: 'mock' },
-  { title: 'Закупівель у плані — сума', value: 'mock', description: 'mock' },
-  { title: 'Договорів укладено — число', value: 'mock', description: 'mock' },
-  { title: 'Загальна сума догов. — число', value: 'mock', description: 'mock' },
-  { title: 'Економія — %', value: 'mock', description: 'mock' },
-  { title: 'Сер. економія — %', value: 'mock', description: 'mock' },
-  { title: 'Договорів у роботі — число', value: 'mock', description: 'mock' },
-  { title: 'Ризик строків — число', value: 'mock', description: 'mock' },
-] as const;
+import { toOptions } from '../../utils/toOptions';
+import { useKpiKardsConfig } from './helper';
 
 export function MainPage() {
   const { isLoggedIn, setLoggedIn } = useAppContext();
   const userRole = useUserRole();
   const showDepartments = useCanSelectDepartment();
-  const years = useYears();
+  const years_limit = isLoggedIn ? undefined : 3;
+  const { data: years, isLoading: isYearsLoading } = useYears(years_limit);
   const departments = useDepartments();
 
-  const [year, setYear] = useState(years[0] ?? '2025');
+  const [year, setYear] = useState<string>();
+  const selectedYear = year ?? years?.[0] ?? '';
   const [department, setDepartment] = useState(departments[0]?.value ?? 'all');
 
-  const yearItems = years.map((y) => ({ value: y, label: y }));
+  const { data, isLoading } = useKpiCards(selectedYear);
+  const { data: statuses, isLoading: isStatusesLoading } = useProcurementStatuses(selectedYear);
+  const { data: dynamics, isLoading: isDynamicsLoading } = useProcurementDynamics(years_limit);
+  const yearItems = toOptions(years ?? []);
+  const kpiCardsConfig = useKpiKardsConfig(data);
+  const isKpiCardsLoading = isYearsLoading || isLoading;
 
   return (
     <div className="flex min-h-svh flex-col bg-[var(--color-canvas)]">
@@ -63,7 +67,13 @@ export function MainPage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">KPI</h1>
             <TooltipIcon text="KPI (Key Performance Indicators) — ключові показники ефективності закупівель підприємства." />
-            <Dropdown ariaLabel="Обрати рік" items={yearItems} value={year} onChange={setYear} />
+            <Dropdown
+              ariaLabel="Обрати рік"
+              isLoading={isYearsLoading}
+              items={yearItems}
+              value={selectedYear}
+              onChange={setYear}
+            />
             {showDepartments ? (
               <Dropdown
                 ariaLabel="Обрати підрозділ"
@@ -77,12 +87,12 @@ export function MainPage() {
           <Divider />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {MOCK_KPI_CARDS.map((card) => (
+            {kpiCardsConfig.map((card) => (
               <KpiCard
                 key={card.title}
                 title={card.title}
                 value={card.value}
-                description={card.description}
+                isLoading={isKpiCardsLoading}
               />
             ))}
           </div>
@@ -90,19 +100,29 @@ export function MainPage() {
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <BigCard>
-            <BigCardHeader title="Статус закупівель" description={`Дані за ${year} рік`} />
-            <p className="mt-4 text-sm text-[var(--color-text-muted)]">
-              here is gonan be chart later
-            </p>
+            <BigCardHeader
+              title="Статус закупівель"
+              description={
+                selectedYear
+                  ? `Скільки пунктів плану перебуває в кожному статусі у ${selectedYear} році`
+                  : 'Скільки пунктів плану перебуває в кожному статусі'
+              }
+            />
+            <PieChart
+              isLoading={isYearsLoading || isStatusesLoading}
+              options={getProcurementStatusPieOptions(statuses)}
+            />
           </BigCard>
           <BigCard>
             <BigCardHeader
-              title="Динаміка за останні 5 років"
-              description="Порівняння планових асигнувань та факту виконання"
+              title="Динаміка за останні роки"
+              description="Запланована сума закупівель і сума укладених договорів за кожен рік"
             />
-            <p className="mt-4 text-sm text-[var(--color-text-muted)]">
-              here is gonan be chart later
-            </p>
+            <PieChart
+              emptyText="Немає даних"
+              isLoading={isDynamicsLoading}
+              options={getProcurementDynamicsColumnOptions(dynamics)}
+            />
           </BigCard>
         </div>
       </main>
