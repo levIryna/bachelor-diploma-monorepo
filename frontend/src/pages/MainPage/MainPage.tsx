@@ -7,30 +7,32 @@ import {
   Dropdown,
   EnterpriseBrand,
   KpiCard,
+  LoginDialog,
+  Loader,
   Navigation,
   PieChart,
   TooltipIcon,
-  UserAccountBadge,
+  UserSession,
 } from '../../components';
-import { useAppContext } from '../../context/AppContext';
+import { useAppContext } from '../../context/app-context';
 import { useDepartments } from '../../hooks/useDepartments';
-import { useCanSelectDepartment, useUserRole } from '../../hooks/useUserAccess';
+import { useCanSelectDepartment } from '../../hooks/useUserAccess';
 import { useKpiCards } from '../../api/kpiCards';
 import { useProcurementDynamics } from '../../api/procurementDynamics';
 import { useProcurementStatuses } from '../../api/procurementStatuses';
 import { useYears } from '../../api/years';
 import { getProcurementDynamicsColumnOptions } from '../../charts_config/procurementDynamicsColumn';
 import { getProcurementStatusPieOptions } from '../../charts_config/procurementStatusPie';
-import { getUserInitials } from '../../mocks/user';
 import { toOptions } from '../../utils/toOptions';
 import { useKpiKardsConfig } from './helper';
 
 export function MainPage() {
-  const { isLoggedIn, setLoggedIn } = useAppContext();
-  const userRole = useUserRole();
+  const { isAuthReady, isLoggedIn } = useAppContext();
   const showDepartments = useCanSelectDepartment();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const years_limit = isLoggedIn ? undefined : 3;
-  const { data: years, isLoading: isYearsLoading } = useYears(years_limit);
+  const { data: years, isLoading: isYearsQueryLoading } = useYears(years_limit, isAuthReady);
+  const isYearsLoading = !isAuthReady || isYearsQueryLoading;
   const departments = useDepartments();
 
   const [year, setYear] = useState<string>();
@@ -39,7 +41,11 @@ export function MainPage() {
 
   const { data, isLoading } = useKpiCards(selectedYear);
   const { data: statuses, isLoading: isStatusesLoading } = useProcurementStatuses(selectedYear);
-  const { data: dynamics, isLoading: isDynamicsLoading } = useProcurementDynamics(years_limit);
+  const { data: dynamics, isLoading: isDynamicsQueryLoading } = useProcurementDynamics(
+    years_limit,
+    isAuthReady,
+  );
+  const isDynamicsLoading = !isAuthReady || isDynamicsQueryLoading;
   const yearItems = toOptions(years ?? []);
   const kpiCardsConfig = useKpiKardsConfig(data);
   const isKpiCardsLoading = isYearsLoading || isLoading;
@@ -53,14 +59,17 @@ export function MainPage() {
             {isLoggedIn ? <Navigation /> : null}
           </div>
           <div className="flex shrink-0 items-center gap-4">
-            {isLoggedIn ? (
-              <UserAccountBadge initials={getUserInitials()} role={userRole} />
+            {!isAuthReady ? (
+              <Loader />
+            ) : isLoggedIn ? (
+              <UserSession />
             ) : (
-              <Button text="Залогуватись" onClick={() => setLoggedIn(true)} />
+              <Button text="Увійти" onClick={() => setIsLoginOpen(true)} />
             )}
           </div>
         </div>
       </header>
+      <LoginDialog open={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <section className="space-y-5">

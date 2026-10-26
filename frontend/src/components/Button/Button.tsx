@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react';
 
 type ButtonProps = {
   text: string;
-  onClick: () => void;
+  onClick?: () => void;
   variant?: 'primary' | 'secondary';
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'children'>;
 
@@ -33,6 +33,7 @@ export function Button({
       className={[
         'inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2',
         'text-sm font-semibold shadow-sm transition-colors',
+        'disabled:cursor-not-allowed disabled:opacity-60',
         'focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)] focus:ring-offset-2',
         variantClasses[variant],
         className,

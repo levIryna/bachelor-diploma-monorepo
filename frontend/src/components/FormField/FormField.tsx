@@ -3,7 +3,9 @@ type FormFieldProps = {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  type?: 'text' | 'date';
+  type?: 'text' | 'date' | 'email' | 'password';
+  autoComplete?: string;
+  autoFocus?: boolean;
 };
 
 export function FormField({
@@ -12,12 +14,16 @@ export function FormField({
   onChange,
   disabled = false,
   type = 'text',
+  autoComplete,
+  autoFocus = false,
 }: FormFieldProps) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-[var(--color-text-muted)]">{label}</span>
       <input
         type={type}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
         disabled={disabled}
         value={value}
         onChange={(event) => onChange(event.target.value)}

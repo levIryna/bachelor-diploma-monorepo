@@ -12,9 +12,10 @@ function getProcurementDynamics(limit?: number): Promise<ProcurementDynamicsPoin
   return apiClient<ProcurementDynamicsPoint[]>(`/procurement_dynamics${toQueryString({ limit })}`);
 }
 
-export function useProcurementDynamics(limit?: number) {
+export function useProcurementDynamics(limit?: number, enabled = true) {
   return useQuery({
     queryKey: ['procurement_dynamics', limit],
     queryFn: () => getProcurementDynamics(limit),
+    enabled,
   });
 }

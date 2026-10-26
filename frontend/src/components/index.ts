@@ -6,6 +6,8 @@ export { SearchField } from './SearchField/SearchField';
 export { Navigation } from './Navigation/Navigation';
 export { UserAccountBadge } from './UserAccountBadge/UserAccountBadge';
 export { Button } from './Button/Button';
+export { LoginDialog } from './LoginDialog/LoginDialog';
+export { UserSession } from './UserSession/UserSession';
 export { KpiCard } from './KpiCard/KpiCard';
 export { Dropdown, type DropdownItem } from './Dropdown/Dropdown';
 export { TooltipIcon } from './TooltipIcon/TooltipIcon';

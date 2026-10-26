@@ -1,5 +1,5 @@
 -- Three users (dev). Password for all: password
--- bcrypt: $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- bcrypt: $2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2
 
 BEGIN;
 
@@ -7,7 +7,7 @@ INSERT INTO users (id, email, password_hash, full_name, role, department_id, is_
   (
     '22222222-2222-2222-2222-222222222201',
     'admin@example.com',
-    '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2',
     'Іванов Іван Іванович',
     'admin',
     NULL,
@@ -16,7 +16,7 @@ INSERT INTO users (id, email, password_hash, full_name, role, department_id, is_
   (
     '22222222-2222-2222-2222-222222222202',
     'head@example.com',
-    '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2',
     'Коваленко Олег Сергійович',
     'department_head',
     '11111111-1111-1111-1111-111111111001',
@@ -25,7 +25,7 @@ INSERT INTO users (id, email, password_hash, full_name, role, department_id, is_
   (
     '22222222-2222-2222-2222-222222222203',
     'buyer@example.com',
-    '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2',
     'Шевченко Єва Андріївна',
     'buyer',
     NULL,

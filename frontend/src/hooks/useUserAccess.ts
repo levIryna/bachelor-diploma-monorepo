@@ -1,9 +1,9 @@
-import { useAppContext } from '../context/AppContext';
+import { useAppContext } from '../context/app-context';
 import { ADMIN_ROLE, BUYER_ROLE } from '../mocks/roles';
 
 export function useUserRole(): string {
-  const { isLoggedIn, userRole } = useAppContext();
-  return isLoggedIn ? userRole : '';
+  const { user } = useAppContext();
+  return user?.role ?? '';
 }
 
 export function useHasRole(role: string): boolean {
