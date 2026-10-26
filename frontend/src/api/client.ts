@@ -12,20 +12,25 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
+type ApiRequestInit = RequestInit & {
+  skipSessionEnded?: boolean;
+};
+
+export async function apiClient<T>(path: string, init?: ApiRequestInit): Promise<T> {
   const isLogin = path === '/auth/login';
+  const { skipSessionEnded, ...requestInit } = init ?? {};
 
   const response = await fetch(`${BASE_URL}${path}`, {
-    ...init,
+    ...requestInit,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...init?.headers,
+      ...requestInit.headers,
     },
   });
 
   const expired = response.headers.get('X-Auth-Expired') === '1';
-  if (!isLogin && (expired || response.status === 401)) {
+  if (!skipSessionEnded && !isLogin && (expired || response.status === 401)) {
     notifySessionEnded();
   }
 

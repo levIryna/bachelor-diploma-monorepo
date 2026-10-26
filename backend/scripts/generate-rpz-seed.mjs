@@ -14,13 +14,7 @@ const LINES_PER_YEAR = {
   2027: 20,
 };
 
-const DEPTS = [
-  "11111111-1111-1111-1111-111111111001",
-  "11111111-1111-1111-1111-111111111002",
-  "11111111-1111-1111-1111-111111111003",
-  "11111111-1111-1111-1111-111111111004",
-  "11111111-1111-1111-1111-111111111005",
-];
+const DEPTS = [1, 2, 3, 4, 5];
 
 const BUYER = "22222222-2222-2222-2222-222222222203";
 const ADMIN = "22222222-2222-2222-2222-222222222201";
@@ -77,12 +71,7 @@ const EXECUTORS = [
 ];
 
 function statusForYear(year, line) {
-  if (year <= 2023) return line % 5 === 0 ? "completed" : "contract_signed";
-  if (year === 2024) {
-    const s = ["completed", "contract_signed", "awaiting_contract", "procedure"];
-    return s[line % s.length];
-  }
-  if (year === 2025 || year === 2026) return "completed";
+  if (year <= 2026) return "completed";
   if (line <= 4) return "completed";
   if (line <= 7) return "contract_signed";
   return line % 3 === 0 ? "in_preparation" : "planned";
@@ -123,7 +112,7 @@ for (const year of YEARS) {
     gen_random_uuid(),
     ${year},
     ${line},
-    '${dept}'::uuid,
+    ${dept},
     ${sqlStr(headName)},
     ${sqlStr(execName)},
     ${sqlStr(subject)},

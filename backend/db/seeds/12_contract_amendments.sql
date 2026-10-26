@@ -1,6 +1,6 @@
 -- Додаткові угоди лише для РПЗ зі статусом contract_signed / completed.
 -- 1 або 2 записи на пункт, прив’язані до основного договору (не до другої ДД-«додаткової угоди»).
--- Пункти planned / in_preparation / procedure / awaiting_contract не отримують записів.
+-- Пункти planned / in_preparation не отримують записів.
 
 BEGIN;
 

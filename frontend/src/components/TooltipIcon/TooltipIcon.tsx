@@ -11,7 +11,7 @@ export function TooltipIcon({ text, className = '' }: TooltipIconProps) {
     >
       <span
         aria-hidden
-        className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-muted)] transition-colors group-hover:border-[var(--color-text-placeholder)] group-hover:text-[var(--color-text-secondary)]"
+        className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-text-placeholder)] text-xs font-semibold text-[var(--color-text-muted)] transition-colors group-hover:border-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]"
       >
         i
       </span>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { fetchCurrentUser, loginRequest, logoutRequest } from '../api/auth';
-import { onSessionEnded } from '../auth/session';
+import { notifyAuthChanged, onAuthChanged, onSessionEnded } from '../auth/session';
 import type { AuthUser } from '../types/auth';
 import { AppContext, type Theme } from './app-context';
 
@@ -20,31 +20,47 @@ export function AppProvider({ children }: AppProviderProps) {
   useEffect(() => {
     sessionStorage.removeItem('accessToken');
 
-    const unsubscribe = onSessionEnded(() => {
+    let cancelled = false;
+    let requestId = 0;
+
+    const refreshSession = () => {
+      const id = ++requestId;
+      fetchCurrentUser({ quiet: true })
+        .then((nextUser) => {
+          if (!cancelled && id === requestId) {
+            setUser(nextUser);
+          }
+        })
+        .catch(() => {
+          if (!cancelled && id === requestId) {
+            setUser(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled && id === requestId) {
+            setIsAuthReady(true);
+          }
+        });
+    };
+
+    const unsubscribeEnded = onSessionEnded(() => {
       setUser(null);
     });
+    const unsubscribeChanged = onAuthChanged(refreshSession);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSession();
+      }
+    };
 
-    let cancelled = false;
-    fetchCurrentUser()
-      .then((nextUser) => {
-        if (!cancelled) {
-          setUser(nextUser);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setUser(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsAuthReady(true);
-        }
-      });
+    document.addEventListener('visibilitychange', onVisible);
+    refreshSession();
 
     return () => {
       cancelled = true;
-      unsubscribe();
+      document.removeEventListener('visibilitychange', onVisible);
+      unsubscribeEnded();
+      unsubscribeChanged();
     };
   }, []);
 
@@ -53,9 +69,11 @@ export function AppProvider({ children }: AppProviderProps) {
     try {
       const nextUser = await fetchCurrentUser();
       setUser(nextUser);
+      notifyAuthChanged();
     } catch (error) {
       await logoutRequest().catch(() => undefined);
       setUser(null);
+      notifyAuthChanged();
       throw error;
     }
   }, []);
@@ -63,7 +81,10 @@ export function AppProvider({ children }: AppProviderProps) {
   const logout = useCallback(() => {
     void logoutRequest()
       .catch(() => undefined)
-      .finally(() => setUser(null));
+      .finally(() => {
+        setUser(null);
+        notifyAuthChanged();
+      });
   }, []);
 
   const value = useMemo(

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   BigCard,
   BigCardHeader,
@@ -14,8 +14,8 @@ import {
   TooltipIcon,
   UserSession,
 } from '../../components';
+import { useDepartmentDirectory } from '../../api/departments';
 import { useAppContext } from '../../context/app-context';
-import { useDepartments } from '../../hooks/useDepartments';
 import { useCanSelectDepartment } from '../../hooks/useUserAccess';
 import { useKpiCards } from '../../api/kpiCards';
 import { useProcurementDynamics } from '../../api/procurementDynamics';
@@ -27,32 +27,57 @@ import { toOptions } from '../../utils/toOptions';
 import { useKpiKardsConfig } from './helper';
 
 export function MainPage() {
-  const { isAuthReady, isLoggedIn } = useAppContext();
-  const showDepartments = useCanSelectDepartment();
+  const { isAuthReady, isLoggedIn, user } = useAppContext();
+  const canSelectDepartment = useCanSelectDepartment();
+  const departmentLocked = isLoggedIn && !canSelectDepartment;
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const years_limit = isLoggedIn ? undefined : 3;
   const { data: years, isLoading: isYearsQueryLoading } = useYears(years_limit, isAuthReady);
   const isYearsLoading = !isAuthReady || isYearsQueryLoading;
-  const departments = useDepartments();
+  const { data: departmentDirectory, isLoading: isDepartmentsLoading } = useDepartmentDirectory(
+    isLoggedIn,
+    user?.id,
+  );
 
   const [year, setYear] = useState<string>();
   const selectedYear = year ?? years?.[0] ?? '';
-  const [department, setDepartment] = useState(departments[0]?.value ?? 'all');
+  const [departmentChoice, setDepartmentChoice] = useState('all');
+  const departmentItems = useMemo(() => {
+    const options = (departmentDirectory ?? []).map((department) => ({
+      value: department.id,
+      label: department.name,
+    }));
+    if (departmentLocked) {
+      return options;
+    }
+    return [{ value: 'all', label: 'Усі підрозділи' }, ...options];
+  }, [departmentDirectory, departmentLocked]);
+  const selectedDepartment = departmentLocked ? (user?.departmentId ?? '') : departmentChoice;
+  const departmentId =
+    isLoggedIn && selectedDepartment && selectedDepartment !== 'all' ? selectedDepartment : undefined;
+  const departmentReady = !departmentLocked || Boolean(user?.departmentId);
+  const selectedDepartmentLabel =
+    departmentItems.find((item) => item.value === selectedDepartment)?.label ?? '';
 
-  const { data, isLoading } = useKpiCards(selectedYear);
-  const { data: statuses, isLoading: isStatusesLoading } = useProcurementStatuses(selectedYear);
+  const { data, isLoading } = useKpiCards(selectedYear, departmentId, departmentReady);
+  const { data: statuses, isLoading: isStatusesLoading } = useProcurementStatuses(
+    selectedYear,
+    departmentId,
+    departmentReady,
+  );
   const { data: dynamics, isLoading: isDynamicsQueryLoading } = useProcurementDynamics(
     years_limit,
-    isAuthReady,
+    isAuthReady && departmentReady,
+    departmentId,
   );
-  const isDynamicsLoading = !isAuthReady || isDynamicsQueryLoading;
+  const isDynamicsLoading = !isAuthReady || !departmentReady || isDynamicsQueryLoading;
   const yearItems = toOptions(years ?? []);
   const kpiCardsConfig = useKpiKardsConfig(data);
   const isKpiCardsLoading = isYearsLoading || isLoading;
 
   return (
     <div className="flex min-h-svh flex-col bg-[var(--color-canvas)]">
-      <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+      <header className="sticky top-0 z-50 bg-[var(--color-header)]">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-8">
             <EnterpriseBrand companyName="ТОВ 'Укрпромінвест'" />
@@ -60,11 +85,11 @@ export function MainPage() {
           </div>
           <div className="flex shrink-0 items-center gap-4">
             {!isAuthReady ? (
-              <Loader />
+              <Loader tone="light" />
             ) : isLoggedIn ? (
               <UserSession />
             ) : (
-              <Button text="Увійти" onClick={() => setIsLoginOpen(true)} />
+              <Button text="Увійти" variant="onHeader" onClick={() => setIsLoginOpen(true)} />
             )}
           </div>
         </div>
@@ -83,12 +108,18 @@ export function MainPage() {
               value={selectedYear}
               onChange={setYear}
             />
-            {showDepartments ? (
+            {isLoggedIn ? (
               <Dropdown
                 ariaLabel="Обрати підрозділ"
-                items={departments}
-                value={department}
-                onChange={setDepartment}
+                disabled={departmentLocked}
+                isLoading={isDepartmentsLoading}
+                items={departmentItems}
+                value={
+                  departmentItems.some((item) => item.value === selectedDepartment)
+                    ? selectedDepartment
+                    : (departmentItems[0]?.value ?? '')
+                }
+                onChange={setDepartmentChoice}
               />
             ) : null}
           </div>
@@ -113,19 +144,28 @@ export function MainPage() {
               title="Статус закупівель"
               description={
                 selectedYear
-                  ? `Скільки пунктів плану перебуває в кожному статусі у ${selectedYear} році`
-                  : 'Скільки пунктів плану перебуває в кожному статусі'
+                  ? `Розподіл пунктів річного плану закупівель за статусами у ${selectedYear} році${
+                      selectedDepartmentLabel && selectedDepartment !== 'all'
+                        ? ` · ${selectedDepartmentLabel}`
+                        : ''
+                    }`
+                  : 'Розподіл пунктів річного плану закупівель за статусами'
               }
             />
             <PieChart
-              isLoading={isYearsLoading || isStatusesLoading}
+              key={`statuses-${selectedYear}-${departmentId ?? 'all'}`}
+              isLoading={isYearsLoading || !departmentReady || isStatusesLoading}
               options={getProcurementStatusPieOptions(statuses)}
             />
           </BigCard>
           <BigCard>
             <BigCardHeader
               title="Динаміка за останні роки"
-              description="Запланована сума закупівель і сума укладених договорів за кожен рік"
+              description={
+                selectedDepartmentLabel && selectedDepartment !== 'all'
+                  ? `Запланована сума закупівель і сума укладених договорів за кожен рік · ${selectedDepartmentLabel}`
+                  : 'Запланована сума закупівель і сума укладених договорів за кожен рік'
+              }
             />
             <PieChart
               emptyText="Немає даних"

@@ -8,14 +8,19 @@ export type ProcurementStatusCount = {
   count: number;
 };
 
-function getProcurementStatuses(year: string): Promise<ProcurementStatusCount[]> {
-  return apiClient<ProcurementStatusCount[]>(`/procurement_statuses${toQueryString({ year })}`);
+function getProcurementStatuses(
+  year: string,
+  departmentId?: string,
+): Promise<ProcurementStatusCount[]> {
+  return apiClient<ProcurementStatusCount[]>(
+    `/procurement_statuses${toQueryString({ year, departmentId })}`,
+  );
 }
 
-export function useProcurementStatuses(year: string) {
+export function useProcurementStatuses(year: string, departmentId?: string, enabled = true) {
   return useQuery({
-    queryKey: ['procurement_statuses', year],
-    queryFn: () => getProcurementStatuses(year),
-    enabled: year.length > 0,
+    queryKey: ['procurement_statuses', year, departmentId ?? null],
+    queryFn: () => getProcurementStatuses(year, departmentId),
+    enabled: enabled && year.length > 0,
   });
 }

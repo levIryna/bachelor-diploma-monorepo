@@ -10,8 +10,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TYPE procurement_status_enum AS ENUM (
   'planned',
   'in_preparation',
-  'procedure',
-  'awaiting_contract',
   'contract_signed',
   'completed'
 );
@@ -30,7 +28,7 @@ CREATE TYPE item_type_enum AS ENUM (
 -- ========== Organization & access ==========
 
 CREATE TABLE departments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id smallint PRIMARY KEY,
   name varchar(255) NOT NULL UNIQUE,
   is_active boolean NOT NULL DEFAULT true
 );
@@ -41,7 +39,7 @@ CREATE TABLE users (
   password_hash varchar(255) NOT NULL,
   full_name varchar(255) NOT NULL,
   role varchar(20) NOT NULL,
-  department_id uuid REFERENCES departments (id) ON DELETE RESTRICT,
+  department_id smallint REFERENCES departments (id) ON DELETE RESTRICT,
   is_active boolean DEFAULT true,
   created_at timestamptz DEFAULT now(),
   CONSTRAINT users_role_check CHECK (role IN ('admin', 'department_head', 'buyer'))
@@ -100,7 +98,7 @@ CREATE TABLE procurement_plan_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   plan_year smallint NOT NULL,
   line_number int NOT NULL,
-  department_id uuid NOT NULL REFERENCES departments (id) ON DELETE RESTRICT,
+  department_id smallint NOT NULL REFERENCES departments (id) ON DELETE RESTRICT,
   initiator_head_name varchar(255),
   executor_name varchar(255),
   subject text NOT NULL,
@@ -137,7 +135,7 @@ CREATE TABLE contract_documents (
   item_type item_type_enum NOT NULL,
   expected_cost_application_thousands numeric(14, 3),
   procedure_id smallint NOT NULL REFERENCES procurement_procedures (id) ON DELETE RESTRICT,
-  initiator_department_id uuid NOT NULL REFERENCES departments (id) ON DELETE RESTRICT,
+  initiator_department_id smallint NOT NULL REFERENCES departments (id) ON DELETE RESTRICT,
   tz_responsible_name varchar(255),
   technical_expert_name varchar(255),
   estimator_name varchar(255),

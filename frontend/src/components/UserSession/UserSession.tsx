@@ -14,7 +14,7 @@ export function UserSession() {
   return (
     <div className="flex items-center gap-4">
       <UserAccountBadge initials={getInitials(user.fullName)} role={getRoleLabel(user.role)} />
-      <Button text="Вийти" variant="secondary" onClick={logout} />
+      <Button text="Вийти" variant="onHeader" onClick={logout} />
     </div>
   );
 }

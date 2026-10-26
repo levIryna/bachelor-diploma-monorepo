@@ -16,15 +16,15 @@ export function EnterpriseBrand({
     <div className={['flex items-center gap-3', className].join(' ')}>
       <div
         aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-600)] text-sm font-bold text-white shadow-sm"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/15 text-sm font-bold text-white"
       >
         {companyName.trim().charAt(0).toUpperCase() || 'З'}
       </div>
       <div className="flex flex-col text-left leading-tight">
-        <span className="text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
+        <span className="text-lg font-bold tracking-tight text-white">
           {companyName}
         </span>
-        <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-white/70">
           {tagline}
         </span>
       </div>

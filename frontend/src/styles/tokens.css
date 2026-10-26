@@ -2,39 +2,40 @@
  * Design tokens — procurement analytics dashboard (Stitch / Excalidraw mock).
  */
 :root {
-  /* Brand */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
+  /* Brand — одна фіолетова гама */
+  --color-brand-50: #f6f1fb;
+  --color-brand-100: #eadcf6;
+  --color-brand-600: #6d28d9;
+  --color-brand-700: #5b21b6;
+  --color-brand-800: #4c1d95;
+  --color-header: #5c2d78;
 
   /* Secondary / charts */
-  --color-secondary-500: #0ea5e9;
-  --color-chart-indigo: #6366f1;
-  --color-success-50: #ecfdf5;
-  --color-success-700: #047857;
-  --color-success-border: #a7f3d0;
-  --color-warning-50: #fffbeb;
-  --color-warning-600: #d97706;
-  --color-warning-700: #b45309;
-  --color-warning-border: #fde68a;
+  --color-secondary-500: #d946ef;
+  --color-chart-indigo: #7c3aed;
+  --color-success-50: #e5fff4;
+  --color-success-700: #059669;
+  --color-success-border: #5ee9b5;
+  --color-warning-50: #fff4d6;
+  --color-warning-600: #f59e0b;
+  --color-warning-700: #d97706;
+  --color-warning-border: #fcd34d;
 
-  /* Surfaces & text */
-  --color-canvas: #f8fafc;
+  /* Surfaces & text. Фон сторінки — майже білий, з прозорим фіолетовим шаром. */
+  --color-canvas: rgb(109 40 217 / 0.07);
   --color-surface: #ffffff;
-  --color-surface-muted: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #64748b;
-  --color-text-placeholder: #94a3b8;
+  --color-surface-muted: #faf7fc;
+  --color-border: #eadff3;
+  --color-border-subtle: #f3eaf8;
+  --color-text-primary: #2a1840;
+  --color-text-secondary: #5c4d6e;
+  --color-text-muted: #7a6b8a;
+  --color-text-placeholder: #a894b8;
 
   /* Focus & shadows */
-  --color-focus-ring: #2563eb;
-  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.05);
-  --shadow-card-hover: 0 4px 6px -1px rgb(15 23 42 / 0.08);
+  --color-focus-ring: #6d28d9;
+  --shadow-card: 0 10px 28px -18px rgb(92 45 120 / 0.35);
+  --shadow-card-hover: 0 16px 32px -16px rgb(92 45 120 / 0.4);
 
   /* Radii */
   --radius-button: 0.5rem;

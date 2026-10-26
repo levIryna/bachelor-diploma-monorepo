@@ -41,13 +41,13 @@ export function getProcurementDynamicsColumnOptions(
       {
         type: 'column',
         name: 'Заплановано',
-        color: '#2563eb',
+        color: '#7c3aed',
         data: rows.map((row) => row.planned),
       },
       {
         type: 'column',
         name: 'Фактичні витрати',
-        color: '#0ea5e9',
+        color: '#e879f9',
         data: rows.map((row) => row.actual),
       },
     ],

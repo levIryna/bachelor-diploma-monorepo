@@ -12,6 +12,6 @@ export function logoutRequest(): Promise<void> {
   return apiClient('/auth/logout', { method: 'POST' });
 }
 
-export function fetchCurrentUser(): Promise<AuthUser> {
-  return apiClient<AuthUser>('/auth/me');
+export function fetchCurrentUser(options?: { quiet?: boolean }): Promise<AuthUser> {
+  return apiClient<AuthUser>('/auth/me', { skipSessionEnded: options?.quiet });
 }

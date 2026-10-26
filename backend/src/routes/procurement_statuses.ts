@@ -1,11 +1,10 @@
 import { Router } from "express";
+import { resolveDepartmentScope } from "../auth/departmentScope";
 import pool from "../db";
 
 const STATUSES = [
   "planned",
   "in_preparation",
-  "procedure",
-  "awaiting_contract",
   "contract_signed",
   "completed",
 ] as const;
@@ -20,12 +19,19 @@ procurementStatusesRouter.get("/", async (req, res) => {
     return;
   }
 
+  const scope = resolveDepartmentScope(req);
+  if (!scope.ok) {
+    res.status(scope.status).json({ message: scope.message });
+    return;
+  }
+
   const result = await pool.query<{ status: string; count: string }>(
     `SELECT status::text AS status, COUNT(*)::int AS count
      FROM procurement_plan_items
      WHERE plan_year = $1
+       AND ($2::int IS NULL OR department_id = $2::int)
      GROUP BY status`,
-    [year],
+    [year, scope.departmentId],
   );
 
   const counts = new Map(result.rows.map((row) => [row.status, Number(row.count)]));

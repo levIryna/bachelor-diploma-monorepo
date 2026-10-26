@@ -14,7 +14,7 @@ type LoginUserRow = {
   email: string;
   password_hash: string;
   role: string;
-  department_id: string | null;
+  department_id: number | null;
   is_active: boolean | null;
 };
 
@@ -23,7 +23,7 @@ type CurrentUserRow = {
   email: string;
   full_name: string;
   role: string;
-  department_id: string | null;
+  department_id: number | null;
   is_active: boolean | null;
 };
 
@@ -53,7 +53,7 @@ authRouter.post("/login", async (req, res) => {
   const accessToken = signAccessToken({
     id: user.id,
     role: user.role,
-    departmentId: user.department_id,
+    departmentId: user.department_id === null ? null : String(user.department_id),
   });
 
   setAccessCookie(res, accessToken);
@@ -89,7 +89,7 @@ authRouter.get("/me", requireAuth, async (req, res) => {
     email: user.email,
     fullName: user.full_name,
     role: user.role,
-    departmentId: user.department_id,
+    departmentId: user.department_id === null ? null : String(user.department_id),
   });
 });
 

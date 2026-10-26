@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { resolveDepartmentScope } from "../auth/departmentScope";
 import pool from "../db";
 
 type KpiCardsRow = {
@@ -22,6 +23,12 @@ kpiCardsRouter.get("/", async (req, res) => {
     return;
   }
 
+  const scope = resolveDepartmentScope(req);
+  if (!scope.ok) {
+    res.status(scope.status).json({ message: scope.message });
+    return;
+  }
+
   const result = await pool.query<KpiCardsRow>(
     `WITH plan AS (
       SELECT
@@ -39,6 +46,7 @@ kpiCardsRouter.get("/", async (req, res) => {
       FROM procurement_plan_items p
       LEFT JOIN contract_documents cd ON cd.plan_item_id = p.id
       WHERE p.plan_year = $1
+        AND ($2::int IS NULL OR p.department_id = $2::int)
       GROUP BY p.id
     ),
     savings AS (
@@ -51,15 +59,16 @@ kpiCardsRouter.get("/", async (req, res) => {
     )
     SELECT
       COUNT(*) AS planed_amount,
-      COALESCE(SUM(plan.expected_cost_thousands), 0) AS planed_sum,
+      ROUND(COALESCE(SUM(plan.expected_cost_thousands), 0)::numeric, 2) AS planed_sum,
       COALESCE(SUM(plan.signed_count), 0) AS signed_contracts,
-      COALESCE((
+      ROUND(COALESCE((
         SELECT SUM(cd.contract_amount_uah)
         FROM contract_documents cd
         JOIN procurement_plan_items item ON item.id = cd.plan_item_id
         WHERE cd.contract_date IS NOT NULL
           AND EXTRACT(YEAR FROM cd.contract_date) = $1
-      ), 0) AS contacts_total_sum,
+          AND ($2::int IS NULL OR item.department_id = $2::int)
+      ), 0)::numeric, 2) AS contacts_total_sum,
       COUNT(*) FILTER (WHERE plan.status <> 'completed') AS purchases_in_progress,
       COUNT(*) FILTER (
         WHERE
@@ -73,10 +82,10 @@ kpiCardsRouter.get("/", async (req, res) => {
           OR plan.signed_late IS TRUE
           OR plan.application_late IS TRUE
       ) AS in_risk,
-      COALESCE((SELECT SUM(economy) FROM savings), 0) AS total_savings,
-      COALESCE((SELECT AVG(economy / expected_uah * 100) FROM savings), 0) AS average_savings
+      ROUND(COALESCE((SELECT SUM(economy) FROM savings), 0)::numeric, 2) AS total_savings,
+      ROUND(COALESCE((SELECT AVG(economy / expected_uah * 100) FROM savings), 0)::numeric, 2) AS average_savings
     FROM plan`,
-    [year],
+    [year, scope.departmentId],
   );
 
   const row = result.rows[0];

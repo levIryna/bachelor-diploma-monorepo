@@ -12,7 +12,7 @@ export function KpiCard({ title, value, isLoading = false, className = '' }: Kpi
   return (
     <article
       className={[
-        'flex flex-col items-center overflow-hidden rounded-xl border border-[var(--color-border)]',
+        'flex h-full flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)]',
         'bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)]',
         className,
       ].join(' ')}
@@ -22,7 +22,9 @@ export function KpiCard({ title, value, isLoading = false, className = '' }: Kpi
           <Loader size={22} />
         </div>
       ) : (
-        <div className="text-center text-3xl font-bold tracking-tight text-[var(--color-brand-600)]">{value}</div>
+        <div className="text-center text-3xl font-bold tracking-tight text-[var(--color-brand-700)]">
+          {value}
+        </div>
       )}
       <span className="mt-2 block w-full text-center text-sm text-[var(--color-text-muted)]">{title}</span>
     </article>

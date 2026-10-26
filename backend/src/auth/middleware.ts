@@ -12,7 +12,7 @@ const LOGIN_PATH = "/auth/login";
 type RefreshUserRow = {
   id: string;
   role: string;
-  department_id: string | null;
+  department_id: number | null;
   is_active: boolean | null;
 };
 
@@ -80,7 +80,7 @@ async function refreshAccessToken(userId: string): Promise<string | null> {
   return signAccessToken({
     id: user.id,
     role: user.role,
-    departmentId: user.department_id,
+    departmentId: user.department_id === null ? null : String(user.department_id),
   });
 }
 

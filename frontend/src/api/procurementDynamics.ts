@@ -8,14 +8,19 @@ export type ProcurementDynamicsPoint = {
   actual: number;
 };
 
-function getProcurementDynamics(limit?: number): Promise<ProcurementDynamicsPoint[]> {
-  return apiClient<ProcurementDynamicsPoint[]>(`/procurement_dynamics${toQueryString({ limit })}`);
+function getProcurementDynamics(
+  limit?: number,
+  departmentId?: string,
+): Promise<ProcurementDynamicsPoint[]> {
+  return apiClient<ProcurementDynamicsPoint[]>(
+    `/procurement_dynamics${toQueryString({ limit, departmentId })}`,
+  );
 }
 
-export function useProcurementDynamics(limit?: number, enabled = true) {
+export function useProcurementDynamics(limit?: number, enabled = true, departmentId?: string) {
   return useQuery({
-    queryKey: ['procurement_dynamics', limit],
-    queryFn: () => getProcurementDynamics(limit),
+    queryKey: ['procurement_dynamics', limit ?? null, departmentId ?? null],
+    queryFn: () => getProcurementDynamics(limit, departmentId),
     enabled,
   });
 }

@@ -42,7 +42,10 @@ export function verifyAccessToken(token: string): AccessTokenPayload | null {
     if (typeof role !== "string") {
       return null;
     }
-    if (typeof departmentId !== "string" && departmentId !== null) {
+    if (
+      departmentId !== null &&
+      (typeof departmentId !== "string" || !/^[1-9]\d{0,4}$/.test(departmentId))
+    ) {
       return null;
     }
 

@@ -136,7 +136,7 @@ for (let i = 0; i < items.length; i++) {
     '${type}'::item_type_enum,
     ${appCost},
     ${procId},
-    '${item.department_id}'::uuid,
+    ${item.department_id},
     ${sqlStr("Коваленко Олег Сергійович")},
     ${sqlStr("Петренко Іван Олександрович")},
     ${sqlStr("Шевченко Єва Андріївна")},

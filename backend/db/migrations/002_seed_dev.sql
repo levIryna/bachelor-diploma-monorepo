@@ -4,8 +4,8 @@
 BEGIN;
 
 INSERT INTO departments (id, name, is_active) VALUES
-  ('11111111-1111-1111-1111-111111111101', 'ІТ-підрозділ', true),
-  ('11111111-1111-1111-1111-111111111102', 'Юридичний відділ', true);
+  (4, 'ІТ-підрозділ', true),
+  (3, 'Юридичний відділ', true);
 
 INSERT INTO procurement_kinds (name_uk) VALUES
   ('Товари'),
@@ -58,7 +58,7 @@ INSERT INTO users (id, email, password_hash, full_name, role, department_id, is_
     '$2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2',
     'Коваленко Олег Сергійович',
     'department_head',
-    '11111111-1111-1111-1111-111111111101',
+    1,
     true
   );
 

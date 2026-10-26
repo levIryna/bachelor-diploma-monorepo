@@ -13,14 +13,14 @@ export type KpiCardsResponse = {
   in_risk: number;
 };
 
-function getKpiCards(year: string): Promise<KpiCardsResponse> {
-  return apiClient<KpiCardsResponse>(`/kpi_cards${toQueryString({ year })}`);
+function getKpiCards(year: string, departmentId?: string): Promise<KpiCardsResponse> {
+  return apiClient<KpiCardsResponse>(`/kpi_cards${toQueryString({ year, departmentId })}`);
 }
 
-export function useKpiCards(year: string) {
+export function useKpiCards(year: string, departmentId?: string, enabled = true) {
   return useQuery({
-    queryKey: ['kpi_cards', year],
-    queryFn: () => getKpiCards(year),
-    enabled: year.length > 0,
+    queryKey: ['kpi_cards', year, departmentId ?? null],
+    queryFn: () => getKpiCards(year, departmentId),
+    enabled: enabled && year.length > 0,
   });
 }

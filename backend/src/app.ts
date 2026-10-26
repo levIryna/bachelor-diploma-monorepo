@@ -1,6 +1,7 @@
 import express, { type ErrorRequestHandler } from "express";
 import { attachUser } from "./auth/middleware";
 import authRouter from "./routes/auth";
+import departmentsRouter from "./routes/departments";
 import kpiCardsRouter from "./routes/kpi_cards";
 import procurementDynamicsRouter from "./routes/procurement_dynamics";
 import procurementStatusesRouter from "./routes/procurement_statuses";
@@ -27,6 +28,7 @@ app.use(express.json());
 app.use(attachUser);
 
 app.use("/auth", authRouter);
+app.use("/departments", departmentsRouter);
 app.use("/years", yearsRouter);
 app.use("/kpi_cards", kpiCardsRouter);
 app.use("/procurement_statuses", procurementStatusesRouter);

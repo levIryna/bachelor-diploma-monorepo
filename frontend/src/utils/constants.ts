@@ -12,8 +12,6 @@ export const KPI_CARDS_TITLE = {
 export const PROCUREMENT_STATUS_LABEL = {
   planned: 'Заплановано',
   in_preparation: 'У підготовці',
-  procedure: 'Триває закупівельна процедура',
-  awaiting_contract: 'Очікується укладення договору',
   contract_signed: 'Договір укладено',
   completed: 'Завершено',
 } as const;

@@ -17,12 +17,33 @@ export function LoginDialog({ open, onClose }: LoginDialogProps) {
   return <LoginForm onClose={onClose} />;
 }
 
+const EMPTY_FIELD_MESSAGE = 'Це поле не може бути пустим';
+const INVALID_EMAIL_MESSAGE = 'Формат невірний';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function emailError(value: string) {
+  if (!value) {
+    return EMPTY_FIELD_MESSAGE;
+  }
+  if (!EMAIL_PATTERN.test(value)) {
+    return INVALID_EMAIL_MESSAGE;
+  }
+  return '';
+}
+
+function passwordError(value: string) {
+  return value ? '' : EMPTY_FIELD_MESSAGE;
+}
+
 function LoginForm({ onClose }: { onClose: () => void }) {
   const { login } = useAppContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showFieldErrors, setShowFieldErrors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const emailMessage = showFieldErrors ? emailError(email) : '';
+  const passwordMessage = showFieldErrors ? passwordError(password) : '';
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -37,15 +58,16 @@ function LoginForm({ onClose }: { onClose: () => void }) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim() || !password) {
-      setError('Вкажіть пошту та пароль');
+    if (emailError(email) || passwordError(password)) {
+      setShowFieldErrors(true);
+      setError('');
       return;
     }
 
     setError('');
     setIsSubmitting(true);
     try {
-      await login(email.trim(), password);
+      await login(email, password);
       onClose();
     } catch (submitError) {
       setError(submitError instanceof ApiError ? submitError.message : 'Не вдалося увійти');
@@ -68,7 +90,7 @@ function LoginForm({ onClose }: { onClose: () => void }) {
         <h2 id="login-title" className="text-lg font-bold text-[var(--color-text-primary)]">
           Увійти
         </h2>
-        <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-4" noValidate onSubmit={handleSubmit}>
           <FormField
             label="Електронна пошта"
             type="email"
@@ -76,6 +98,8 @@ function LoginForm({ onClose }: { onClose: () => void }) {
             autoFocus
             value={email}
             disabled={isSubmitting}
+            error={emailMessage}
+            rejectSpaces
             onChange={setEmail}
           />
           <FormField
@@ -84,6 +108,8 @@ function LoginForm({ onClose }: { onClose: () => void }) {
             autoComplete="current-password"
             value={password}
             disabled={isSubmitting}
+            error={passwordMessage}
+            rejectSpaces
             onChange={setPassword}
           />
           {error ? <p className="text-sm text-red-700">{error}</p> : null}

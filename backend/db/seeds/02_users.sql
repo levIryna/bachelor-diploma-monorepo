@@ -19,7 +19,7 @@ INSERT INTO users (id, email, password_hash, full_name, role, department_id, is_
     '$2b$10$Yk5cIKw/cllSbnXFVdvy9eXE6tKjxRquEW39JQ.OGlxSVoGVEUFn2',
     'Коваленко Олег Сергійович',
     'department_head',
-    '11111111-1111-1111-1111-111111111001',
+    1,
     true
   ),
   (
