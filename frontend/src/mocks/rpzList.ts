@@ -57,12 +57,3 @@ export const mockRpzListItems: RpzListItem[] = [
     buyer: 'І. Петренко',
   },
 ];
-
-export const RPZ_STATUS_FILTER_OPTIONS = [
-  { value: 'all', label: 'Усі статуси' },
-  { value: 'draft', label: 'Чернетка' },
-  { value: 'pending', label: 'На погодженні' },
-  { value: 'approved', label: 'Затверджено' },
-  { value: 'in_progress', label: 'В роботі' },
-  { value: 'done', label: 'Виконано' },
-] as const;

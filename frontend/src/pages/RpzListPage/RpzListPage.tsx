@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Divider, Dropdown, SearchField } from '../../components';
-import { useYears } from '../../api/years';
-import { useDepartments } from '../../hooks/useDepartments';
-import { mockRpzListItems, RPZ_STATUS_FILTER_OPTIONS } from '../../mocks/rpzList';
+import { Button, Divider, Dropdown, Loader, SearchField } from '../../components';
+import { useProcurementPlanItems } from '../../api/procurementPlanItems';
+import { useProcurementStatusValues } from '../../api/procurementStatusValues';
+import { useAppContext } from '../../context/app-context';
+import { useDepartmentFilter } from '../../hooks/useDepartmentFilter';
+import { useYearFilter } from '../../hooks/useYearFilter';
 import { paths } from '../../routes/paths';
-import { toOptions } from '../../utils/toOptions';
+import { OPEN_PLAN_YEAR, PROCUREMENT_STATUS_LABEL } from '../../utils/constants';
 
 const TABLE_COLUMNS = [
   'Рік',
@@ -18,108 +20,125 @@ const TABLE_COLUMNS = [
   'Закупник',
 ] as const;
 
+const NEED_TYPE_LABEL: Record<string, string> = {
+  annual: 'Щорічна',
+  one_time: 'Разова',
+};
+
+function statusLabel(status: string): string {
+  if (status in PROCUREMENT_STATUS_LABEL) {
+    return PROCUREMENT_STATUS_LABEL[status as keyof typeof PROCUREMENT_STATUS_LABEL];
+  }
+  return status;
+}
+
+function needLabel(needType: string): string {
+  return NEED_TYPE_LABEL[needType] ?? needType;
+}
+
+function formatCost(valueThousands: number): string {
+  const uah = Math.round(valueThousands * 1000);
+  const grouped = String(uah).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${grouped} грн`;
+}
+
 export function RpzListPage() {
   const navigate = useNavigate();
-  const { data: years, isLoading } = useYears();
-  const departments = useDepartments();
-
-  const [year, setYear] = useState<string>();
-  const selectedYear = year ?? years?.[0] ?? '';
-  const [department, setDepartment] = useState('all');
+  const { isAuthReady, isLoggedIn } = useAppContext();
+  const { selectedYear, setYear, yearItems, isYearsLoading } = useYearFilter();
+  const {
+    departmentItems,
+    setDepartment,
+    departmentId,
+    departmentReady,
+    departmentLocked,
+    isDepartmentsLoading,
+    departmentValue,
+  } = useDepartmentFilter();
+  const { data: statuses, isLoading: isStatusesQueryLoading } = useProcurementStatusValues(
+    isAuthReady && isLoggedIn,
+  );
+  const isStatusesLoading = !isAuthReady || isStatusesQueryLoading;
   const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
 
-  const yearItems = useMemo(() => toOptions(years ?? []), [years]);
-
-  const statusItems = RPZ_STATUS_FILTER_OPTIONS.map((item) => ({
-    value: item.value,
-    label: item.label,
-  }));
+  const statusItems = useMemo(() => {
+    const options = (statuses ?? []).map((item) => ({
+      value: item,
+      label: statusLabel(item),
+    }));
+    return [{ value: 'all', label: 'Усі статуси' }, ...options];
+  }, [statuses]);
+  const statusValue = statusItems.some((item) => item.value === status) ? status : 'all';
+  const statusFilter = statusValue === 'all' ? undefined : statusValue;
+  const listEnabled = isAuthReady && isLoggedIn && departmentReady && selectedYear.length > 0;
+  const {
+    data: planItems,
+    isLoading: isPlanItemsLoading,
+    isError,
+  } = useProcurementPlanItems(selectedYear, departmentId, statusFilter, listEnabled);
+  const isListLoading = !listEnabled || isPlanItemsLoading;
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const rows = planItems ?? [];
+    if (!query) {
+      return rows;
+    }
 
-    return mockRpzListItems.filter((row) => {
-      if (row.year !== selectedYear) {
-        return false;
-      }
-
-      if (department !== 'all') {
-        const deptLabel = departments.find((d) => d.value === department)?.label ?? '';
-        if (deptLabel && row.department !== deptLabel) {
-          return false;
-        }
-      }
-
-      if (status !== 'all') {
-        const statusLabel = statusItems.find((s) => s.value === status)?.label ?? '';
-        if (statusLabel !== 'Усі статуси' && row.status !== statusLabel) {
-          return false;
-        }
-      }
-
-      if (!query) {
-        return true;
-      }
-
-      const haystack = [
-        row.year,
-        row.number,
-        row.department,
-        row.subject,
-        row.expectedCost,
-        row.need,
-        row.status,
-        row.buyer,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(query);
-    });
-  }, [department, departments, search, status, statusItems, selectedYear]);
+    return rows.filter((row) => row.subject.toLowerCase().includes(query));
+  }, [planItems, search]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            РПЗ — список
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-            Річний план закупівель підприємства
-          </p>
-        </div>
-        <Button text="Додати новий пункт РПЗ" onClick={() => navigate(`${paths.rpz}/new`)} />
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          Річний план закупівель
+        </h1>
+        {selectedYear === OPEN_PLAN_YEAR ? (
+          <Button text="Додати новий пункт РПЗ" onClick={() => navigate(`${paths.rpz}/new`)} />
+        ) : null}
       </div>
 
       <section className="flex flex-wrap items-center gap-3">
         <Dropdown
-          ariaLabel="Фільтр за роком"
-          isLoading={isLoading}
+          ariaLabel="Обрати рік"
+          isLoading={isYearsLoading}
           items={yearItems}
           value={selectedYear}
-          onChange={setYear}
+          onChange={(value) => {
+            setYear(value);
+            setSearch('');
+          }}
         />
         <Dropdown
-          ariaLabel="Фільтр за підрозділом"
-          items={departments}
-          value={department}
-          onChange={setDepartment}
+          ariaLabel="Обрати підрозділ"
+          disabled={departmentLocked}
+          isLoading={isDepartmentsLoading}
+          items={departmentItems}
+          value={departmentValue}
+          onChange={(value) => {
+            setDepartment(value);
+            setSearch('');
+          }}
         />
         <Dropdown
-          ariaLabel="Фільтр за статусом"
+          ariaLabel="Обрати статус"
+          isLoading={isStatusesLoading}
           items={statusItems}
-          value={status}
-          onChange={setStatus}
+          value={statusValue}
+          onChange={(value) => {
+            setStatus(value);
+            setSearch('');
+          }}
         />
       </section>
 
       <SearchField
         value={search}
         onChange={setSearch}
-        placeholder="Пошук за номером, предметом, закупником…"
-        ariaLabel="Пошук у списку РПЗ"
+        placeholder="Пошук за назвою предмету закупівлі"
+        ariaLabel="Пошук за назвою предмету закупівлі"
       />
 
       <Divider />
@@ -143,7 +162,22 @@ export function RpzListPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length === 0 ? (
+            {isListLoading ? (
+              <tr>
+                <td colSpan={TABLE_COLUMNS.length + 1} className="px-4 py-10 text-center">
+                  <Loader size={22} />
+                </td>
+              </tr>
+            ) : isError ? (
+              <tr>
+                <td
+                  colSpan={TABLE_COLUMNS.length + 1}
+                  className="px-4 py-10 text-center text-[var(--color-text-muted)]"
+                >
+                  Не вдалося завантажити список.
+                </td>
+              </tr>
+            ) : filteredRows.length === 0 ? (
               <tr>
                 <td
                   colSpan={TABLE_COLUMNS.length + 1}
@@ -162,21 +196,21 @@ export function RpzListPage() {
                     {row.year}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap font-medium text-[var(--color-text-primary)]">
-                    {row.number}
+                    {row.lineNumber}
                   </td>
                   <td className="px-4 py-3 text-[var(--color-text-secondary)]">{row.department}</td>
                   <td className="min-w-[12rem] px-4 py-3 text-[var(--color-text-primary)]">
                     {row.subject}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-primary)]">
-                    {row.expectedCost}
+                    {formatCost(row.expectedCost)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">
-                    {row.need}
+                    {needLabel(row.needType)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="inline-flex rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
-                      {row.status}
+                      {statusLabel(row.status)}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-[var(--color-text-secondary)]">

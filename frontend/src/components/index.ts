@@ -1,4 +1,4 @@
-export { FormField } from './FormField/FormField';
+export { FormField, FormSelect } from './FormField/FormField';
 export { FormSectionCard } from './FormSectionCard/FormSectionCard';
 export { Divider } from './Divider/Divider';
 export { Loader } from './Loader/Loader';
@@ -6,6 +6,7 @@ export { SearchField } from './SearchField/SearchField';
 export { Navigation } from './Navigation/Navigation';
 export { UserAccountBadge } from './UserAccountBadge/UserAccountBadge';
 export { Button } from './Button/Button';
+export { ConfirmDialog } from './ConfirmDialog/ConfirmDialog';
 export { LoginDialog } from './LoginDialog/LoginDialog';
 export { UserSession } from './UserSession/UserSession';
 export { KpiCard } from './KpiCard/KpiCard';

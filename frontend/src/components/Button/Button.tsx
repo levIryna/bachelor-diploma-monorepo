@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 type ButtonProps = {
   text: string;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'onHeader';
+  variant?: 'primary' | 'secondary' | 'danger' | 'onHeader';
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'children'>;
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
@@ -16,9 +16,11 @@ const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
     'bg-[var(--color-surface)] hover:bg-[var(--color-brand-50)] active:bg-[var(--color-brand-100)]',
     'ring-1 ring-[var(--color-border)]',
   ].join(' '),
-  onHeader: ['bg-white/15 text-white ring-1 ring-white/35', 'hover:bg-white/25 active:bg-white/30'].join(
-    ' ',
-  ),
+  danger: ['text-white', 'bg-red-600 hover:bg-red-700 active:bg-red-800'].join(' '),
+  onHeader: [
+    'bg-white/15 text-white ring-1 ring-white/35',
+    'hover:bg-white/25 active:bg-white/30',
+  ].join(' '),
 };
 
 export function Button({

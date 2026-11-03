@@ -1,5 +1,5 @@
 -- Підрозділи-ініціатори (довідник departments)
--- Назви узгоджені з frontend mocks (useDepartments, rpzList).
+-- Назви узгоджені з моком списку РПЗ (rpzList).
 
 BEGIN;
 

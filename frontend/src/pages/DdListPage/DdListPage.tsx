@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Divider, Dropdown, SearchField } from '../../components';
-import { useYears } from '../../api/years';
+import { useYearFilter } from '../../hooks/useYearFilter';
 import { mockDdListItems } from '../../mocks/ddList';
 import { paths } from '../../routes/paths';
-import { toOptions } from '../../utils/toOptions';
 
 const TABLE_COLUMNS = [
   'Номер',
@@ -19,12 +18,8 @@ const TABLE_COLUMNS = [
 
 export function DdListPage() {
   const navigate = useNavigate();
-  const { data: years, isLoading } = useYears();
-  const [year, setYear] = useState<string>();
-  const selectedYear = year ?? years?.[0] ?? '';
+  const { selectedYear, setYear, yearItems, isYearsLoading } = useYearFilter();
   const [search, setSearch] = useState('');
-
-  const yearItems = useMemo(() => toOptions(years ?? []), [years]);
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -64,8 +59,8 @@ export function DdListPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Dropdown
-          ariaLabel="Фільтр за роком"
-          isLoading={isLoading}
+          ariaLabel="Обрати рік"
+          isLoading={isYearsLoading}
           items={yearItems}
           value={selectedYear}
           onChange={setYear}

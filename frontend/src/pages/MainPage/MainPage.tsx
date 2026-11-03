@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   BigCard,
   BigCardHeader,
@@ -14,50 +14,31 @@ import {
   TooltipIcon,
   UserSession,
 } from '../../components';
-import { useDepartmentDirectory } from '../../api/departments';
 import { useAppContext } from '../../context/app-context';
-import { useCanSelectDepartment } from '../../hooks/useUserAccess';
+import { useDepartmentFilter } from '../../hooks/useDepartmentFilter';
 import { useKpiCards } from '../../api/kpiCards';
 import { useProcurementDynamics } from '../../api/procurementDynamics';
 import { useProcurementStatuses } from '../../api/procurementStatuses';
-import { useYears } from '../../api/years';
 import { getProcurementDynamicsColumnOptions } from '../../charts_config/procurementDynamicsColumn';
 import { getProcurementStatusPieOptions } from '../../charts_config/procurementStatusPie';
-import { toOptions } from '../../utils/toOptions';
+import { useYearFilter } from '../../hooks/useYearFilter';
 import { useKpiKardsConfig } from './helper';
 
 export function MainPage() {
-  const { isAuthReady, isLoggedIn, user } = useAppContext();
-  const canSelectDepartment = useCanSelectDepartment();
-  const departmentLocked = isLoggedIn && !canSelectDepartment;
+  const { isAuthReady, isLoggedIn } = useAppContext();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const years_limit = isLoggedIn ? undefined : 3;
-  const { data: years, isLoading: isYearsQueryLoading } = useYears(years_limit, isAuthReady);
-  const isYearsLoading = !isAuthReady || isYearsQueryLoading;
-  const { data: departmentDirectory, isLoading: isDepartmentsLoading } = useDepartmentDirectory(
-    isLoggedIn,
-    user?.id,
-  );
-
-  const [year, setYear] = useState<string>();
-  const selectedYear = year ?? years?.[0] ?? '';
-  const [departmentChoice, setDepartmentChoice] = useState('all');
-  const departmentItems = useMemo(() => {
-    const options = (departmentDirectory ?? []).map((department) => ({
-      value: department.id,
-      label: department.name,
-    }));
-    if (departmentLocked) {
-      return options;
-    }
-    return [{ value: 'all', label: 'Усі підрозділи' }, ...options];
-  }, [departmentDirectory, departmentLocked]);
-  const selectedDepartment = departmentLocked ? (user?.departmentId ?? '') : departmentChoice;
-  const departmentId =
-    isLoggedIn && selectedDepartment && selectedDepartment !== 'all' ? selectedDepartment : undefined;
-  const departmentReady = !departmentLocked || Boolean(user?.departmentId);
-  const selectedDepartmentLabel =
-    departmentItems.find((item) => item.value === selectedDepartment)?.label ?? '';
+  const { yearsLimit, selectedYear, setYear, yearItems, isYearsLoading } = useYearFilter();
+  const {
+    departmentItems,
+    selectedDepartment,
+    setDepartment,
+    departmentId,
+    departmentReady,
+    selectedDepartmentLabel,
+    departmentLocked,
+    isDepartmentsLoading,
+    departmentValue,
+  } = useDepartmentFilter();
 
   const { data, isLoading } = useKpiCards(selectedYear, departmentId, departmentReady);
   const { data: statuses, isLoading: isStatusesLoading } = useProcurementStatuses(
@@ -66,12 +47,11 @@ export function MainPage() {
     departmentReady,
   );
   const { data: dynamics, isLoading: isDynamicsQueryLoading } = useProcurementDynamics(
-    years_limit,
+    yearsLimit,
     isAuthReady && departmentReady,
     departmentId,
   );
   const isDynamicsLoading = !isAuthReady || !departmentReady || isDynamicsQueryLoading;
-  const yearItems = toOptions(years ?? []);
   const kpiCardsConfig = useKpiKardsConfig(data);
   const isKpiCardsLoading = isYearsLoading || isLoading;
 
@@ -114,12 +94,8 @@ export function MainPage() {
                 disabled={departmentLocked}
                 isLoading={isDepartmentsLoading}
                 items={departmentItems}
-                value={
-                  departmentItems.some((item) => item.value === selectedDepartment)
-                    ? selectedDepartment
-                    : (departmentItems[0]?.value ?? '')
-                }
-                onChange={setDepartmentChoice}
+                value={departmentValue}
+                onChange={setDepartment}
               />
             ) : null}
           </div>

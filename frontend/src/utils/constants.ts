@@ -9,6 +9,8 @@ export const KPI_CARDS_TITLE = {
   in_risk: 'Ризик невиконання в срок',
 };
 
+export const OPEN_PLAN_YEAR = '2027';
+
 export const PROCUREMENT_STATUS_LABEL = {
   planned: 'Заплановано',
   in_preparation: 'У підготовці',

@@ -11,6 +11,18 @@ const STATUSES = [
 
 const procurementStatusesRouter = Router();
 
+procurementStatusesRouter.get("/values", async (_req, res) => {
+  const result = await pool.query<{ value: string }>(
+    `SELECT e.enumlabel AS value
+     FROM pg_type t
+     JOIN pg_enum e ON e.enumtypid = t.oid
+     WHERE t.typname = 'procurement_status_enum'
+     ORDER BY e.enumsortorder`,
+  );
+
+  res.status(200).json(result.rows.map((row) => row.value));
+});
+
 procurementStatusesRouter.get("/", async (req, res) => {
   const year = Number(req.query.year);
 

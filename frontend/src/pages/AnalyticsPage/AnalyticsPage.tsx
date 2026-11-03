@@ -1,17 +1,24 @@
 import { useMemo, useState } from 'react';
 import { BigCard, Dropdown } from '../../components';
 import { useYears } from '../../api/years';
-import { useDepartments } from '../../hooks/useDepartments';
+import { useDepartmentFilter } from '../../hooks/useDepartmentFilter';
 import { toOptions } from '../../utils/toOptions';
 import { ANALYTICS_SECTIONS } from './analyticsSections';
 
 export function AnalyticsPage() {
   const { data: years, isLoading } = useYears();
-  const departments = useDepartments();
+  const {
+    departmentItems,
+    selectedDepartment,
+    setDepartment,
+    selectedDepartmentLabel,
+    departmentLocked,
+    isDepartmentsLoading,
+    departmentValue,
+  } = useDepartmentFilter();
 
   const [year, setYear] = useState<string>();
   const selectedYear = year ?? years?.[0] ?? '';
-  const [department, setDepartment] = useState('all');
 
   const yearItems = useMemo(() => toOptions(years ?? []), [years]);
 
@@ -35,9 +42,11 @@ export function AnalyticsPage() {
           onChange={setYear}
         />
         <Dropdown
-          ariaLabel="Підрозділ"
-          items={departments}
-          value={department}
+          ariaLabel="Обрати підрозділ"
+          disabled={departmentLocked}
+          isLoading={isDepartmentsLoading}
+          items={departmentItems}
+          value={departmentValue}
           onChange={setDepartment}
         />
       </section>
@@ -58,8 +67,8 @@ export function AnalyticsPage() {
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">{section.description}</p>
               <p className="mt-6 min-h-[220px] rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-muted)]/50 p-6 text-center text-sm text-[var(--color-text-muted)]">
                 Тут буде візуалізація ({selectedYear}
-                {department !== 'all'
-                  ? ` · ${departments.find((d) => d.value === department)?.label ?? department}`
+                {selectedDepartment !== 'all' && selectedDepartmentLabel
+                  ? ` · ${selectedDepartmentLabel}`
                   : ''}
                 )
               </p>
