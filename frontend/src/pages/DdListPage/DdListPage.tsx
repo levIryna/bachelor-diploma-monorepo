@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Divider, Dropdown, SearchField } from '../../components';
+import { useContractDocuments } from '../../api/contractDocuments';
+import { Button, Divider, Dropdown, Loader, SearchField } from '../../components';
+import { useAppContext } from '../../context/app-context';
 import { useYearFilter } from '../../hooks/useYearFilter';
-import { mockDdListItems } from '../../mocks/ddList';
 import { paths } from '../../routes/paths';
 
 const TABLE_COLUMNS = [
-  'Номер',
+  'Номер РПЗ',
+  'Номер договору',
   'Рік',
-  'Пункт',
   'Предмет',
   'Процедура',
   'Контрагент',
@@ -16,46 +17,42 @@ const TABLE_COLUMNS = [
   'Дата',
 ] as const;
 
+function formatAmount(valueThousands: number): string {
+  const uah = Math.round(valueThousands * 1000);
+  const grouped = String(uah).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${grouped} грн`;
+}
+
 export function DdListPage() {
   const navigate = useNavigate();
+  const { isAuthReady, isLoggedIn } = useAppContext();
   const { selectedYear, setYear, yearItems, isYearsLoading } = useYearFilter();
   const [search, setSearch] = useState('');
+  const listEnabled = isAuthReady && isLoggedIn && selectedYear.length > 0;
+  const {
+    data: documents,
+    isLoading: isDocumentsLoading,
+    isError,
+  } = useContractDocuments(selectedYear, listEnabled);
+  const isListLoading = !listEnabled || isDocumentsLoading;
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const rows = documents ?? [];
+    if (!query) {
+      return rows;
+    }
 
-    return mockDdListItems.filter((row) => {
-      if (row.year !== selectedYear) {
-        return false;
-      }
-
-      if (!query) {
-        return true;
-      }
-
-      const haystack = [
-        row.number,
-        row.year,
-        row.item,
-        row.subject,
-        row.procedure,
-        row.counterparty,
-        row.amount,
-        row.date,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(query);
+    return rows.filter((row) => {
+      return String(row.item).includes(query) || row.subject.toLowerCase().includes(query);
     });
-  }, [search, selectedYear]);
+  }, [documents, search]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">ДД</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">Договірна документація</p>
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+        Договірна документація
+      </h1>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Dropdown
@@ -63,16 +60,18 @@ export function DdListPage() {
           isLoading={isYearsLoading}
           items={yearItems}
           value={selectedYear}
-          onChange={setYear}
+          onChange={(value) => {
+            setYear(value);
+            setSearch('');
+          }}
         />
-        <Button text="Додати ДД" onClick={() => navigate(`${paths.procurements}/new`)} />
       </div>
 
       <SearchField
         value={search}
         onChange={setSearch}
-        placeholder="Пошук за номером, предметом, контрагентом…"
-        ariaLabel="Пошук у списку ДД"
+        placeholder="Пошук за номером РПЗ або предметом закупівлі"
+        ariaLabel="Пошук за номером РПЗ або предметом закупівлі"
       />
 
       <Divider />
@@ -85,7 +84,9 @@ export function DdListPage() {
                 <th
                   key={column}
                   scope="col"
-                  className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+                  className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]${
+                    column === 'Процедура' ? ' w-40' : ''
+                  }`}
                 >
                   {column}
                 </th>
@@ -96,13 +97,30 @@ export function DdListPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length === 0 ? (
+            {isListLoading ? (
+              <tr>
+                <td colSpan={TABLE_COLUMNS.length + 1} className="px-4 py-10 text-center">
+                  <Loader size={22} />
+                </td>
+              </tr>
+            ) : isError ? (
               <tr>
                 <td
                   colSpan={TABLE_COLUMNS.length + 1}
                   className="px-4 py-10 text-center text-[var(--color-text-muted)]"
                 >
-                  За обраний рік записів не знайдено.
+                  Не вдалося завантажити список.
+                </td>
+              </tr>
+            ) : filteredRows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={TABLE_COLUMNS.length + 1}
+                  className="px-4 py-10 text-center text-[var(--color-text-muted)]"
+                >
+                  {search.trim()
+                    ? 'За пошуком записів не знайдено.'
+                    : 'За обраний рік записів не знайдено.'}
                 </td>
               </tr>
             ) : (
@@ -112,14 +130,18 @@ export function DdListPage() {
                   className="border-b border-[var(--color-border-subtle)] last:border-b-0 hover:bg-[var(--color-surface-muted)]/60"
                 >
                   <td className="px-4 py-3 font-medium whitespace-nowrap text-[var(--color-text-primary)]">
-                    {row.number}
+                    {row.item}
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{row.number ?? ''}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{row.year}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{row.item}</td>
                   <td className="min-w-[12rem] px-4 py-3">{row.subject}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{row.procedure}</td>
+                  <td className="px-4 py-3">
+                    <div className="w-40 whitespace-normal">{row.procedure}</div>
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">{row.counterparty}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{row.amount}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {row.amount === null ? '' : formatAmount(row.amount)}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">{row.date}</td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <Button

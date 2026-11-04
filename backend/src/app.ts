@@ -1,14 +1,18 @@
 import express, { type ErrorRequestHandler } from "express";
 import { attachUser } from "./auth/middleware";
 import authRouter from "./routes/auth";
+import contractDocumentsRouter from "./routes/contract_documents";
+import contractorsRouter from "./routes/contractors";
 import departmentsRouter from "./routes/departments";
 import kpiCardsRouter from "./routes/kpi_cards";
 import procurementDynamicsRouter from "./routes/procurement_dynamics";
 import {
+  contractTypesRouter,
   fundingSourcesRouter,
   ipNkrekpItemsRouter,
   procurementCategoriesRouter,
   procurementKindsRouter,
+  procurementProceduresRouter,
 } from "./routes/procurement_directories";
 import procurementPlanItemsRouter from "./routes/procurement_plan_items";
 import procurementStatusesRouter from "./routes/procurement_statuses";
@@ -35,11 +39,15 @@ app.use(express.json());
 app.use(attachUser);
 
 app.use("/auth", authRouter);
+app.use("/contract_documents", contractDocumentsRouter);
+app.use("/contractors", contractorsRouter);
 app.use("/departments", departmentsRouter);
 app.use("/years", yearsRouter);
 app.use("/kpi_cards", kpiCardsRouter);
 app.use("/procurement_statuses", procurementStatusesRouter);
 app.use("/procurement_kinds", procurementKindsRouter);
+app.use("/procurement_procedures", procurementProceduresRouter);
+app.use("/contract_types", contractTypesRouter);
 app.use("/procurement_categories", procurementCategoriesRouter);
 app.use("/funding_sources", fundingSourcesRouter);
 app.use("/ip_nkrekp_items", ipNkrekpItemsRouter);

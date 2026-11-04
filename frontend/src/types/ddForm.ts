@@ -3,41 +3,55 @@ export type DdFormMode = 'view' | 'edit' | 'create';
 export type DdFormData = {
   year: string;
   number: string;
-  orderNumber: string;
   rpzYearItem: string;
-  procurementSubject: string;
+  subject: string;
+  itemType: string;
   expectedCostThousands: string;
-  procedureType: string;
+  procedure: string;
   initiatorDepartment: string;
-  responsiblePersons: string;
-  actualApplicationDeadline: string;
-  procedureNumberEtm: string;
-  acceptedCounterparty: string;
+  tzResponsibleName: string;
+  technicalExpertName: string;
+  estimatorName: string;
+  buyerName: string;
+  actualApplicationDate: string;
+  procedureNumber: string;
+  etmUrl: string;
+  contractor: string;
   contractSubject: string;
   contractAmount: string;
-  signingDateAndType: string;
-  validityPeriod: string;
-  notesAndAmendments: string;
+  contractDate: string;
+  contractType: string;
+  validFrom: string;
+  validTo: string;
+  notes: string;
+  amendments: string;
 };
 
 export function createEmptyDdForm(): DdFormData {
   return {
     year: '',
     number: '',
-    orderNumber: '',
     rpzYearItem: '',
-    procurementSubject: '',
+    subject: '',
+    itemType: '',
     expectedCostThousands: '',
-    procedureType: '',
+    procedure: '',
     initiatorDepartment: '',
-    responsiblePersons: '',
-    actualApplicationDeadline: '',
-    procedureNumberEtm: '',
-    acceptedCounterparty: '',
+    tzResponsibleName: '',
+    technicalExpertName: '',
+    estimatorName: '',
+    buyerName: '',
+    actualApplicationDate: '',
+    procedureNumber: '',
+    etmUrl: '',
+    contractor: '',
     contractSubject: '',
     contractAmount: '',
-    signingDateAndType: '',
-    validityPeriod: '',
-    notesAndAmendments: '',
+    contractDate: '',
+    contractType: '',
+    validFrom: '',
+    validTo: '',
+    notes: '',
+    amendments: '',
   };
 }

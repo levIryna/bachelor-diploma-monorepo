@@ -24,3 +24,11 @@ export function useFundingSources(enabled = true) {
 export function useIpNkrekpItems(enabled = true) {
   return useDirectoryNames('/ip_nkrekp_items', 'ip_nkrekp_items', enabled);
 }
+
+export function useProcurementProcedures(enabled = true) {
+  return useDirectoryNames('/procurement_procedures', 'procurement_procedures', enabled);
+}
+
+export function useContractTypes(enabled = true) {
+  return useDirectoryNames('/contract_types', 'contract_types', enabled);
+}

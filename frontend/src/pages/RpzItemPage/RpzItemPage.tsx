@@ -576,19 +576,21 @@ export function RpzItemPage() {
                   </ul>
                 ) : null}
               </div>
-              <button
-                type="button"
-                aria-label="Додати ДД"
-                onClick={() => navigate(`${paths.procurements}/new`)}
-                className={[
-                  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                  'bg-[var(--color-brand-600)] text-lg leading-none font-semibold text-white',
-                  'hover:bg-[var(--color-brand-700)]',
-                  'focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]',
-                ].join(' ')}
-              >
-                +
-              </button>
+              {!isCreate && planItem && planItem.status !== 'completed' ? (
+                <button
+                  type="button"
+                  aria-label="Додати ДД"
+                  onClick={() => navigate(`${paths.procurements}/new?planItemId=${id}`)}
+                  className={[
+                    'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                    'bg-[var(--color-brand-600)] text-lg leading-none font-semibold text-white',
+                    'hover:bg-[var(--color-brand-700)]',
+                    'focus:outline-none focus:ring-2 focus:ring-[var(--color-focus-ring)]',
+                  ].join(' ')}
+                >
+                  +
+                </button>
+              ) : null}
             </div>
             {isClosed ? (
               <p className="text-sm text-[var(--color-text-muted)]">Закупівля завершена</p>
