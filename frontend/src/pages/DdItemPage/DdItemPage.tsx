@@ -290,6 +290,8 @@ export function DdItemPage() {
       void queryClient.invalidateQueries({ queryKey: ['plan_item_contract_documents'] });
       void queryClient.invalidateQueries({ queryKey: ['kpi_cards'] });
       void queryClient.invalidateQueries({ queryKey: ['procurement_dynamics'] });
+      void queryClient.invalidateQueries({ queryKey: ['dynamics_analysis'] });
+      void queryClient.invalidateQueries({ queryKey: ['procurement_methods'] });
       navigate(paths.procurements);
     },
   });

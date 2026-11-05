@@ -123,6 +123,9 @@ export function invalidateRpzQueries(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: ['departments'] }),
     queryClient.invalidateQueries({ queryKey: ['kpi_cards'] }),
     queryClient.invalidateQueries({ queryKey: ['procurement_dynamics'] }),
+    queryClient.invalidateQueries({ queryKey: ['dynamics_analysis'] }),
+    queryClient.invalidateQueries({ queryKey: ['category_analysis'] }),
+    queryClient.invalidateQueries({ queryKey: ['procurement_methods'] }),
   ]);
 }
 

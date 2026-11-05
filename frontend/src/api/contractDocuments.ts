@@ -126,5 +126,7 @@ export function invalidateContractDocumentQueries(queryClient: QueryClient, id: 
     queryClient.invalidateQueries({ queryKey: ['plan_item_contract_documents'] }),
     queryClient.invalidateQueries({ queryKey: ['kpi_cards'] }),
     queryClient.invalidateQueries({ queryKey: ['procurement_dynamics'] }),
+    queryClient.invalidateQueries({ queryKey: ['dynamics_analysis'] }),
+    queryClient.invalidateQueries({ queryKey: ['procurement_methods'] }),
   ]);
 }

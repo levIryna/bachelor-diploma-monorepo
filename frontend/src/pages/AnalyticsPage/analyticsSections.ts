@@ -8,7 +8,8 @@ export const ANALYTICS_SECTIONS: AnalyticsSectionConfig[] = [
   {
     id: 'cost-analysis',
     label: 'Аналіз вартості',
-    description: 'Порівняння запланованої та фактичної вартості закупівель.',
+    description:
+      'Порівняння запланованої та фактичної вартості закупівель за обраним роком і підрозділом.',
   },
   {
     id: 'savings-analysis',
@@ -18,17 +19,12 @@ export const ANALYTICS_SECTIONS: AnalyticsSectionConfig[] = [
   {
     id: 'dynamics',
     label: 'Динаміка',
-    description: 'Зміни показників закупівель у часі.',
+    description: 'Зміни запланованої вартості, фактичних витрат і економії за роками.',
   },
   {
     id: 'categories',
     label: 'Категорії',
-    description: 'Розподіл закупівель за категоріями товарів і послуг.',
-  },
-  {
-    id: 'rating',
-    label: 'Рейтинг',
-    description: 'Рейтинг підрозділів та закупників за ключовими KPI.',
+    description: 'Розподіл запланованої суми закупівель за категоріями товарів і послуг.',
   },
   {
     id: 'procurement-methods',
