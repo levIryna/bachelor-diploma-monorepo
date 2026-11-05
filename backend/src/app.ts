@@ -21,6 +21,7 @@ import {
 import procurementPlanItemsRouter from "./routes/procurement_plan_items";
 import procurementStatusesRouter from "./routes/procurement_statuses";
 import savingsAnalysisRouter from "./routes/savings_analysis";
+import usersRouter from "./routes/users";
 import yearsRouter from "./routes/years";
 
 const app = express();
@@ -49,6 +50,7 @@ app.use("/category_analysis", categoryAnalysisRouter);
 app.use("/cost_analysis", costAnalysisRouter);
 app.use("/contractors", contractorsRouter);
 app.use("/departments", departmentsRouter);
+app.use("/users", usersRouter);
 app.use("/years", yearsRouter);
 app.use("/kpi_cards", kpiCardsRouter);
 app.use("/procurement_statuses", procurementStatusesRouter);

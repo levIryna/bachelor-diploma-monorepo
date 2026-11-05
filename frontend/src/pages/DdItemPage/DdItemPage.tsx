@@ -419,6 +419,7 @@ export function DdItemPage() {
             {isAdmin ? (
               <Button
                 text="Видалити"
+                icon="trash"
                 variant="danger"
                 onClick={() => {
                   deleteDocument.reset();
@@ -426,7 +427,7 @@ export function DdItemPage() {
                 }}
               />
             ) : null}
-            <Button text="Редагувати" onClick={startEdit} />
+            <Button text="Редагувати" icon="edit" onClick={startEdit} />
           </div>
         ) : null}
         {!isCreate && mode === 'edit' ? (

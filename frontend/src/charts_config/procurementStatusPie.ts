@@ -1,6 +1,7 @@
 import type Highcharts from 'highcharts';
 import type { ProcurementStatusCount } from '../api/procurementStatuses';
 import { PROCUREMENT_STATUS_LABEL } from '../utils/constants';
+import { chartInk } from './chartTheme';
 
 const PROCUREMENT_STATUS_COLOR = {
   planned: '#c084fc',
@@ -31,6 +32,7 @@ export function getProcurementStatusPieOptions(rows: ProcurementStatusCount[] = 
       },
     ];
   });
+  const ink = chartInk();
   const singleLabel = data.length <= 1;
   const legendRows = singleLabel ? 1 : Math.max(1, Math.ceil(data.length / 2));
   const legendBlock = legendRows * 24 + 8;
@@ -64,7 +66,7 @@ export function getProcurementStatusPieOptions(rows: ProcurementStatusCount[] = 
       itemStyle: {
         fontSize: '12px',
         fontWeight: '400',
-        color: '#5c4d6e',
+        color: ink.secondary,
         textOverflow: 'ellipsis',
       },
     },
@@ -74,7 +76,7 @@ export function getProcurementStatusPieOptions(rows: ProcurementStatusCount[] = 
         size: PIE_DIAMETER,
         center: ['50%', '50%'],
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: ink.surface,
         dataLabels: {
           enabled: true,
           format: '{point.y}',
@@ -88,6 +90,7 @@ export function getProcurementStatusPieOptions(rows: ProcurementStatusCount[] = 
             fontSize: '12px',
             fontWeight: '600',
             textOutline: 'none',
+            color: document.documentElement.dataset.theme === 'dark' ? '#ffffff' : '#000000',
           },
         },
       },

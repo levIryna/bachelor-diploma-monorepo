@@ -192,6 +192,13 @@ type PlanItemWriteResult =
 async function readPlanItemWrite(
   req: Request,
   record: Record<string, unknown>,
+  options?: {
+    activeKindOnly?: boolean;
+    activeCategoryOnly?: boolean;
+    activeFundingOnly?: boolean;
+    activeIpOnly?: boolean;
+    activeContractorOnly?: boolean;
+  },
 ): Promise<PlanItemWriteResult> {
   const scope = resolveDepartmentScope(req);
   if (!scope.ok) {
@@ -282,45 +289,65 @@ async function readPlanItemWrite(
   }
 
   const kindLookup = await lookupOptionalId(
-    `SELECT id FROM procurement_kinds WHERE name_uk = $1`,
+    options?.activeKindOnly
+      ? `SELECT id FROM procurement_kinds WHERE name_uk = $1 AND is_active = true`
+      : `SELECT id FROM procurement_kinds WHERE name_uk = $1`,
     procurementKind,
-    "Вид закупівлі не знайдено",
+    options?.activeKindOnly
+      ? "Вид закупівлі не знайдено або він пасивний"
+      : "Вид закупівлі не знайдено",
   );
   if (!kindLookup.ok) {
     return { ok: false, status: 400, message: kindLookup.message };
   }
 
   const categoryLookup = await lookupOptionalId(
-    `SELECT id FROM procurement_categories WHERE name_uk = $1`,
+    options?.activeCategoryOnly
+      ? `SELECT id FROM procurement_categories WHERE name_uk = $1 AND is_active = true`
+      : `SELECT id FROM procurement_categories WHERE name_uk = $1`,
     category,
-    "Категорію не знайдено",
+    options?.activeCategoryOnly
+      ? "Категорію не знайдено або вона пасивна"
+      : "Категорію не знайдено",
   );
   if (!categoryLookup.ok) {
     return { ok: false, status: 400, message: categoryLookup.message };
   }
 
   const fundingLookup = await lookupOptionalId(
-    `SELECT id FROM funding_sources WHERE name_uk = $1`,
+    options?.activeFundingOnly
+      ? `SELECT id FROM funding_sources WHERE name_uk = $1 AND is_active = true`
+      : `SELECT id FROM funding_sources WHERE name_uk = $1`,
     fundingSource,
-    "Джерело фінансування не знайдено",
+    options?.activeFundingOnly
+      ? "Джерело фінансування не знайдено або воно пасивне"
+      : "Джерело фінансування не знайдено",
   );
   if (!fundingLookup.ok) {
     return { ok: false, status: 400, message: fundingLookup.message };
   }
 
   const ipLookup = await lookupOptionalId(
-    `SELECT id FROM ip_nkrekp_items WHERE title = $1`,
+    options?.activeIpOnly
+      ? `SELECT id FROM ip_nkrekp_items WHERE title = $1 AND is_active = true`
+      : `SELECT id FROM ip_nkrekp_items WHERE title = $1`,
     ipItem,
-    "Пункт ІП ІНКРЕКП не знайдено",
+    options?.activeIpOnly
+      ? "Пункт ІП НКРЕКП не знайдено або він пасивний"
+      : "Пункт ІП НКРЕКП не знайдено",
   );
   if (!ipLookup.ok) {
     return { ok: false, status: 400, message: ipLookup.message };
   }
 
   const contractorLookup = await lookupOptionalId(
-    `SELECT id::text AS id FROM contractors WHERE name = $1`,
+    options?.activeContractorOnly
+      ? `SELECT id::text AS id FROM contractors WHERE name = $1 AND is_active = true`
+      : `SELECT id::text AS id FROM contractors WHERE name = $1`,
     counterparty,
-    "Контрагента не знайдено",
+    options?.activeContractorOnly
+      ? "Контрагента не знайдено або він пасивний"
+      : "Контрагента не знайдено",
   );
   if (!contractorLookup.ok) {
     return { ok: false, status: 400, message: contractorLookup.message };
@@ -521,7 +548,13 @@ procurementPlanItemsRouter.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  const parsed = await readPlanItemWrite(req, record);
+  const parsed = await readPlanItemWrite(req, record, {
+    activeKindOnly: true,
+    activeCategoryOnly: true,
+    activeFundingOnly: true,
+    activeIpOnly: true,
+    activeContractorOnly: true,
+  });
   if (!parsed.ok) {
     res.status(parsed.status).json({ message: parsed.message });
     return;

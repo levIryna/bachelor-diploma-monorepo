@@ -1,5 +1,6 @@
 import type Highcharts from 'highcharts';
 import type { ProcurementMethodKind } from '../api/procurementMethods';
+import { chartInk } from './chartTheme';
 
 const PROCEDURE_COLORS = ['#f97316', '#2563eb', '#7c3aed', '#16a34a', '#e879f9', '#0f766e'];
 
@@ -52,6 +53,7 @@ function pieCenters(count: number): Array<[string, string]> {
 export function getProcurementMethodsPieOptions(
   kinds: ProcurementMethodKind[] = [],
 ): Highcharts.Options {
+  const ink = chartInk();
   const procedureNames = procedureNamesOf(kinds);
   const colorByName = new Map(procedureNames.map((name, index) => [name, procedureColor(index)]));
   const centers = pieCenters(kinds.length);
@@ -84,15 +86,15 @@ export function getProcurementMethodsPieOptions(
               chart.renderer
                 .text(String(total), x, y - 8)
                 .attr({ align: 'center' })
-                .css({ fontSize: '28px', fontWeight: '600', color: '#1f2937' }),
+                .css({ fontSize: '28px', fontWeight: '600', color: ink.text }),
               chart.renderer
                 .text(contractWord(total), x, y + 22)
                 .attr({ align: 'center' })
-                .css({ fontSize: '13px', color: '#6b7280' }),
+                .css({ fontSize: '13px', color: ink.muted }),
               chart.renderer
                 .text(series.name, x, chart.plotTop + center[1] - center[2] / 2 - 22)
                 .attr({ align: 'center' })
-                .css({ fontSize: '14px', fontWeight: '600', color: '#1f2937' }),
+                .css({ fontSize: '14px', fontWeight: '600', color: ink.text }),
             ];
             labels.forEach((label) => {
               label.element.classList.add('pie-center-label');
@@ -119,7 +121,7 @@ export function getProcurementMethodsPieOptions(
     plotOptions: {
       pie: {
         borderWidth: 2,
-        borderColor: '#ffffff',
+        borderColor: ink.surface,
         dataLabels: { enabled: false },
       },
     },

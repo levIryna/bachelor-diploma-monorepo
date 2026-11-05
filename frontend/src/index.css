@@ -16,7 +16,7 @@
 :root {
   font-family: var(--font-sans);
   color: var(--color-text-secondary);
-  background-color: #fff;
+  background-color: var(--color-page);
   background-image: linear-gradient(var(--color-canvas), var(--color-canvas));
   font-synthesis: none;
   text-rendering: optimizeLegibility;

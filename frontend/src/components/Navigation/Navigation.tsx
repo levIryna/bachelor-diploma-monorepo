@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useHasRole } from '../../hooks/useUserAccess';
-import { ADMIN_ROLE } from '../../mocks/roles';
+import { ADMIN_ROLE, BUYER_ROLE } from '../../mocks/roles';
 import { paths } from '../../routes/paths';
 
 type NavItem = {
@@ -33,7 +33,8 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
 
 export function Navigation() {
   const isAdmin = useHasRole(ADMIN_ROLE);
-  const tabs = isAdmin ? [...commonTabs, adminTab] : commonTabs;
+  const isBuyer = useHasRole(BUYER_ROLE);
+  const tabs = isAdmin || isBuyer ? [...commonTabs, adminTab] : commonTabs;
 
   return (
     <nav aria-label="Головна навігація" className="hidden md:flex items-center gap-6">
@@ -51,8 +52,8 @@ export function Navigation() {
               role="tooltip"
               className={[
                 'pointer-events-none absolute top-full left-1/2 z-20 mt-1 hidden -translate-x-1/2',
-                'whitespace-nowrap rounded-lg bg-[var(--color-text-primary)] px-2.5 py-1.5',
-                'text-xs font-medium text-white shadow-xl',
+                'whitespace-nowrap rounded-lg bg-[var(--color-tooltip-bg)] px-2.5 py-1.5',
+                'text-xs font-medium text-[var(--color-tooltip-fg)] shadow-xl',
                 'group-hover:block group-focus-visible:block',
               ].join(' ')}
             >

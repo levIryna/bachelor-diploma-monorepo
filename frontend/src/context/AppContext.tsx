@@ -2,19 +2,44 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { fetchCurrentUser, loginRequest, logoutRequest } from '../api/auth';
 import { notifyAuthChanged, onAuthChanged, onSessionEnded } from '../auth/session';
 import type { AuthUser } from '../types/auth';
+import { applyChartTheme } from '../charts_config/chartTheme';
 import { AppContext, type Theme } from './app-context';
+
+const THEME_STORAGE_KEY = 'theme';
+
+function readStoredTheme(): Theme {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  applyChartTheme();
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // The browser blocked storage. The theme still applies for this visit.
+  }
+}
 
 type AppProviderProps = {
   children: ReactNode;
 };
 
 export function AppProvider({ children }: AppProviderProps) {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = readStoredTheme();
+    applyTheme(stored);
+    return stored;
+  });
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {

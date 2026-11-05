@@ -24,8 +24,11 @@ type CurrentUserRow = {
   full_name: string;
   role: string;
   department_id: number | null;
+  department_name: string | null;
   is_active: boolean | null;
 };
+
+const MIN_PASSWORD_LENGTH = 8;
 
 authRouter.post("/login", async (req, res) => {
   const email = req.body?.email;
@@ -73,9 +76,11 @@ authRouter.get("/me", requireAuth, async (req, res) => {
   }
 
   const result = await pool.query<CurrentUserRow>(
-    `SELECT id, email, full_name, role, department_id, is_active
+    `SELECT users.id, users.email, users.full_name, users.role, users.department_id,
+            departments.name AS department_name, users.is_active
      FROM users
-     WHERE id = $1`,
+     LEFT JOIN departments ON departments.id = users.department_id
+     WHERE users.id = $1`,
     [userId],
   );
   const user = result.rows[0];
@@ -90,7 +95,53 @@ authRouter.get("/me", requireAuth, async (req, res) => {
     fullName: user.full_name,
     role: user.role,
     departmentId: user.department_id === null ? null : String(user.department_id),
+    departmentName: user.department_name,
   });
+});
+
+authRouter.patch("/password", requireAuth, async (req, res) => {
+  const userId = req.user?.sub;
+  if (!userId) {
+    res.status(401).json({ message: "Потрібна авторизація" });
+    return;
+  }
+
+  const currentPassword = req.body?.currentPassword;
+  const password = req.body?.password;
+  const passwordConfirm = req.body?.passwordConfirm;
+  if (typeof currentPassword !== "string" || currentPassword.length === 0) {
+    res.status(400).json({ message: "Вкажіть поточний пароль" });
+    return;
+  }
+  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > 72) {
+    res.status(400).json({ message: "Пароль має містити від 8 до 72 символів" });
+    return;
+  }
+  if (password !== passwordConfirm) {
+    res.status(400).json({ message: "Паролі не збігаються" });
+    return;
+  }
+  if (password === currentPassword) {
+    res.status(400).json({ message: "Новий пароль має відрізнятися від поточного" });
+    return;
+  }
+
+  const result = await pool.query<{ password_hash: string; is_active: boolean | null }>(
+    `SELECT password_hash, is_active FROM users WHERE id = $1`,
+    [userId],
+  );
+  const account = result.rows[0];
+  const passwordMatches = account
+    ? await bcrypt.compare(currentPassword, account.password_hash)
+    : false;
+  if (!account || account.is_active === false || !passwordMatches) {
+    res.status(403).json({ message: "Невірний поточний пароль" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await pool.query(`UPDATE users SET password_hash = $2 WHERE id = $1`, [userId, passwordHash]);
+  res.status(200).json({ ok: true });
 });
 
 export default authRouter;

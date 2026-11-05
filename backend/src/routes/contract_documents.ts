@@ -266,6 +266,11 @@ function tooLong(value: string, limit: number): boolean {
 async function readContractDocumentWrite(
   req: Request,
   record: Record<string, unknown>,
+  options?: {
+    activeProcedureOnly?: boolean;
+    activeContractTypeOnly?: boolean;
+    activeContractorOnly?: boolean;
+  },
 ): Promise<
   | { ok: true; value: ContractDocumentWrite; departmentScopeId: string | null }
   | { ok: false; status: number; message: string }
@@ -354,9 +359,13 @@ async function readContractDocumentWrite(
   }
 
   const procedureLookup = await lookupOptionalId(
-    `SELECT id FROM procurement_procedures WHERE name_uk = $1`,
+    options?.activeProcedureOnly
+      ? `SELECT id FROM procurement_procedures WHERE name_uk = $1 AND is_active = true`
+      : `SELECT id FROM procurement_procedures WHERE name_uk = $1`,
     procedure,
-    "Вид процедури не знайдено",
+    options?.activeProcedureOnly
+      ? "Вид процедури не знайдено або він пасивний"
+      : "Вид процедури не знайдено",
   );
   if (!procedureLookup.ok || procedureLookup.id === null) {
     return {
@@ -383,18 +392,26 @@ async function readContractDocumentWrite(
   }
 
   const contractorLookup = await lookupOptionalId(
-    `SELECT id::text AS id FROM contractors WHERE name = $1`,
+    options?.activeContractorOnly
+      ? `SELECT id::text AS id FROM contractors WHERE name = $1 AND is_active = true`
+      : `SELECT id::text AS id FROM contractors WHERE name = $1`,
     contractor,
-    "Контрагента не знайдено",
+    options?.activeContractorOnly
+      ? "Контрагента не знайдено або він пасивний"
+      : "Контрагента не знайдено",
   );
   if (!contractorLookup.ok) {
     return { ok: false, status: 400, message: contractorLookup.message };
   }
 
   const contractTypeLookup = await lookupOptionalId(
-    `SELECT id FROM contract_types WHERE name_uk = $1`,
+    options?.activeContractTypeOnly
+      ? `SELECT id FROM contract_types WHERE name_uk = $1 AND is_active = true`
+      : `SELECT id FROM contract_types WHERE name_uk = $1`,
     contractType,
-    "Тип договору не знайдено",
+    options?.activeContractTypeOnly
+      ? "Тип ДД не знайдено або він пасивний"
+      : "Тип договору не знайдено",
   );
   if (!contractTypeLookup.ok) {
     return { ok: false, status: 400, message: contractTypeLookup.message };
@@ -536,7 +553,11 @@ contractDocumentsRouter.post("/", requireAuth, async (req, res) => {
     return;
   }
 
-  const parsed = await readContractDocumentWrite(req, body);
+  const parsed = await readContractDocumentWrite(req, body, {
+    activeProcedureOnly: true,
+    activeContractTypeOnly: true,
+    activeContractorOnly: true,
+  });
   if (!parsed.ok) {
     res.status(parsed.status).json({ message: parsed.message });
     return;

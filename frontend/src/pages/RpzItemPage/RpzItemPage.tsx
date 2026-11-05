@@ -371,6 +371,7 @@ export function RpzItemPage() {
             {isAdmin ? (
               <Button
                 text="Видалити"
+                icon="trash"
                 variant="danger"
                 onClick={() => {
                   deleteItem.reset();
@@ -382,6 +383,7 @@ export function RpzItemPage() {
               <span className="group relative inline-flex">
                 <Button
                   text="Редагувати"
+                  icon="edit"
                   disabled
                   className="pointer-events-none"
                   aria-describedby="completed-edit-hint"
@@ -402,7 +404,7 @@ export function RpzItemPage() {
                 </span>
               </span>
             ) : (
-              <Button text="Редагувати" onClick={startEdit} />
+              <Button text="Редагувати" icon="edit" onClick={startEdit} />
             )}
           </div>
         ) : null}

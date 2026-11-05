@@ -6,6 +6,7 @@ export const paths = {
   procurements: '/procurements',
   reports: '/reports',
   administration: '/administration',
+  profile: '/profile',
 } as const;
 
 export type AppPath = (typeof paths)[keyof typeof paths];

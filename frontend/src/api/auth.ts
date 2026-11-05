@@ -15,3 +15,14 @@ export function logoutRequest(): Promise<void> {
 export function fetchCurrentUser(options?: { quiet?: boolean }): Promise<AuthUser> {
   return apiClient<AuthUser>('/auth/me', { skipSessionEnded: options?.quiet });
 }
+
+export function changeOwnPassword(input: {
+  currentPassword: string;
+  password: string;
+  passwordConfirm: string;
+}): Promise<{ ok: true }> {
+  return apiClient<{ ok: true }>('/auth/password', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}

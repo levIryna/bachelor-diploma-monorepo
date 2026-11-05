@@ -4,4 +4,5 @@ export type AuthUser = {
   fullName: string;
   role: string;
   departmentId: string | null;
+  departmentName: string | null;
 };

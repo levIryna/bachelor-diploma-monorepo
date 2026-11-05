@@ -1,19 +1,31 @@
 type UserAccountBadgeProps = {
   initials: string;
-  role: string;
+  expanded: boolean;
+  onClick: () => void;
   className?: string;
 };
 
-export function UserAccountBadge({ initials, role, className = '' }: UserAccountBadgeProps) {
+export function UserAccountBadge({
+  initials,
+  expanded,
+  onClick,
+  className = '',
+}: UserAccountBadgeProps) {
   return (
-    <div className={['flex items-center gap-2', className].join(' ')}>
-      <span
-        aria-hidden
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-bold text-white"
-      >
-        {initials}
-      </span>
-      <span className="text-sm font-medium text-white/90">/ {role}</span>
-    </div>
+    <button
+      type="button"
+      aria-label="Обліковий запис"
+      aria-expanded={expanded}
+      aria-haspopup="dialog"
+      onClick={onClick}
+      className={[
+        'flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full',
+        'bg-white/15 text-xs font-bold text-white hover:bg-white/25',
+        'focus:outline-none focus:ring-2 focus:ring-white/70',
+        className,
+      ].join(' ')}
+    >
+      {initials}
+    </button>
   );
 }
