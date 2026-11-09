@@ -3,23 +3,26 @@ import { ACCESS_TOKEN_TTL_SEC } from "./token";
 
 export const ACCESS_COOKIE = "accessToken";
 
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: ACCESS_TOKEN_TTL_SEC * 1000,
-};
+const pagesOrigin = "https://leviryna.github.io";
+
+function accessCookieOptions(req: Request) {
+  const crossSite = req.get("origin") === pagesOrigin;
+  return {
+    httpOnly: true,
+    sameSite: crossSite ? ("none" as const) : ("lax" as const),
+    secure: crossSite,
+    path: "/",
+    maxAge: ACCESS_TOKEN_TTL_SEC * 1000,
+  };
+}
 
 export function setAccessCookie(res: Response, token: string) {
-  res.cookie(ACCESS_COOKIE, token, cookieOptions);
+  res.cookie(ACCESS_COOKIE, token, accessCookieOptions(res.req));
 }
 
 export function clearAccessCookie(res: Response) {
-  res.clearCookie(ACCESS_COOKIE, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-  });
+  const { maxAge: _maxAge, ...clearOptions } = accessCookieOptions(res.req);
+  res.clearCookie(ACCESS_COOKIE, clearOptions);
 }
 
 export function readAccessCookie(req: Request): string | null {

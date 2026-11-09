@@ -380,6 +380,10 @@ usersRouter.patch("/:id/password", requireAuth, manageUsers, async (req, res) =>
     res.status(404).json({ message: "Користувача не знайдено" });
     return;
   }
+  if (current.role === "admin") {
+    res.status(409).json({ message: "Пароль адміністратора не можна змінити" });
+    return;
+  }
 
   const adminId = req.user?.sub;
   const admin = await pool.query<{ password_hash: string }>(

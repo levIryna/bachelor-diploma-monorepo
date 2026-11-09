@@ -11,7 +11,7 @@ import {
   type ManagedUser,
   type UserFieldPatch,
 } from '../../api/users';
-import { BigCard, Button, ConfirmDialog, Loader } from '../../components';
+import { BigCard, BlockedHint, Button, ConfirmDialog, Loader } from '../../components';
 import { ADMIN_ROLE, BUYER_ROLE, DEPARTMENT_HEAD_ROLE, getRoleLabel } from '../../mocks/roles';
 import { paths } from '../../routes/paths';
 
@@ -19,6 +19,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NAME_PATTERN = /^[\p{L}'’\s-]+$/u;
 const ROLES = [ADMIN_ROLE, DEPARTMENT_HEAD_ROLE, BUYER_ROLE];
 const PASSWORD_MASK = '••••••••';
+const ADMIN_PASSWORD_BLOCKED = 'Пароль адміністратора не можна змінити через інтерфейс.';
 
 type EditTarget = 'email' | 'fullName' | 'role' | 'department' | 'status' | 'password';
 
@@ -98,6 +99,9 @@ export function UserDetailPage() {
   });
 
   function openEdit(target: EditTarget, user: ManagedUser) {
+    if (target === 'password' && user.role === ADMIN_ROLE) {
+      return;
+    }
     setEditing(target);
     setFormError('');
     setDraft(target === 'email' ? user.email : target === 'fullName' ? user.fullName : user.role);
@@ -230,7 +234,12 @@ export function UserDetailPage() {
               value={data.isActive ? 'Активний' : 'Пасивний'}
               onEdit={() => openEdit('status', data)}
             />
-            <FieldRow label="Пароль" value={PASSWORD_MASK} onEdit={() => openEdit('password', data)} />
+            <FieldRow
+              label="Пароль"
+              value={PASSWORD_MASK}
+              onEdit={() => openEdit('password', data)}
+              editBlockedReason={data.role === ADMIN_ROLE ? ADMIN_PASSWORD_BLOCKED : undefined}
+            />
             <div className="px-4 py-3">
               <dt className="text-xs text-[var(--color-text-muted)]">Створено</dt>
               <dd className="mt-1 text-sm font-medium text-[var(--color-text-primary)]">{createdAt}</dd>
@@ -422,14 +431,34 @@ export function UserDetailPage() {
   );
 }
 
-function FieldRow({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
+function FieldRow({
+  label,
+  value,
+  onEdit,
+  editBlockedReason,
+}: {
+  label: string;
+  value: string;
+  onEdit: () => void;
+  editBlockedReason?: string;
+}) {
+  const editButton = (
+    <Button
+      text="Редагувати"
+      icon="edit"
+      variant="secondary"
+      disabled={Boolean(editBlockedReason)}
+      onClick={onEdit}
+    />
+  );
+
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
       <div className="min-w-0">
         <dt className="text-xs text-[var(--color-text-muted)]">{label}</dt>
         <dd className="mt-1 truncate text-sm font-medium text-[var(--color-text-primary)]">{value}</dd>
       </div>
-      <Button text="Редагувати" icon="edit" variant="secondary" onClick={onEdit} />
+      {editBlockedReason ? <BlockedHint text={editBlockedReason}>{editButton}</BlockedHint> : editButton}
     </div>
   );
 }

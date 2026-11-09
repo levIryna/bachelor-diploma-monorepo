@@ -26,8 +26,14 @@ import yearsRouter from "./routes/years";
 
 const app = express();
 
+const allowedOrigins = new Set(["http://localhost:5173", "https://leviryna.github.io"]);
+
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  const origin = req.get("origin");
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Expose-Headers", "X-Auth-Expired");

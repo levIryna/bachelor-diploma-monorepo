@@ -11,7 +11,7 @@ export { LoginDialog } from './LoginDialog/LoginDialog';
 export { UserSession } from './UserSession/UserSession';
 export { KpiCard } from './KpiCard/KpiCard';
 export { Dropdown, type DropdownItem } from './Dropdown/Dropdown';
-export { TooltipIcon } from './TooltipIcon/TooltipIcon';
+export { BlockedHint, TooltipIcon } from './TooltipIcon/TooltipIcon';
 export { EnterpriseBrand } from './EnterpriseBrand/EnterpriseBrand';
 export { PieChart } from './PieChart/PieChart';
 export { BigCard } from './BigCard/BigCard';

@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { ApiError } from '../../api/client';
 import { changeOwnPassword } from '../../api/auth';
-import { BigCard, Button, FormField } from '../../components';
+import { BigCard, BlockedHint, Button, FormField } from '../../components';
 import { useAppContext } from '../../context/app-context';
 import type { Theme } from '../../context/app-context';
-import { getRoleLabel } from '../../mocks/roles';
+import { ADMIN_ROLE, getRoleLabel } from '../../mocks/roles';
+
+const ADMIN_PASSWORD_BLOCKED = 'Пароль адміністратора не можна змінити через інтерфейс.';
 
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Світла' },
@@ -143,18 +145,24 @@ export function ProfilePage() {
       <BigCard>
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Керування паролем</h2>
         <div className="mt-4">
-          <Button
-            text="Змінити пароль"
-            onClick={() => {
-              setOpen(true);
-              setSaved(false);
-              setShowEmpty(false);
-              setFormError('');
-              setCurrentPassword('');
-              setPassword('');
-              setPasswordConfirm('');
-            }}
-          />
+          {user.role === ADMIN_ROLE ? (
+            <BlockedHint text={ADMIN_PASSWORD_BLOCKED}>
+              <Button text="Змінити пароль" disabled />
+            </BlockedHint>
+          ) : (
+            <Button
+              text="Змінити пароль"
+              onClick={() => {
+                setOpen(true);
+                setSaved(false);
+                setShowEmpty(false);
+                setFormError('');
+                setCurrentPassword('');
+                setPassword('');
+                setPasswordConfirm('');
+              }}
+            />
+          )}
         </div>
         {saved ? <p className="mt-3 text-sm text-emerald-700">Пароль змінено.</p> : null}
       </BigCard>

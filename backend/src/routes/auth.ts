@@ -126,11 +126,15 @@ authRouter.patch("/password", requireAuth, async (req, res) => {
     return;
   }
 
-  const result = await pool.query<{ password_hash: string; is_active: boolean | null }>(
-    `SELECT password_hash, is_active FROM users WHERE id = $1`,
+  const result = await pool.query<{ password_hash: string; is_active: boolean | null; role: string }>(
+    `SELECT password_hash, is_active, role FROM users WHERE id = $1`,
     [userId],
   );
   const account = result.rows[0];
+  if (account?.role === "admin") {
+    res.status(403).json({ message: "Пароль адміністратора не можна змінити" });
+    return;
+  }
   const passwordMatches = account
     ? await bcrypt.compare(currentPassword, account.password_hash)
     : false;
