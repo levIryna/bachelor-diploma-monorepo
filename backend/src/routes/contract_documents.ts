@@ -270,6 +270,7 @@ async function readContractDocumentWrite(
     activeProcedureOnly?: boolean;
     activeContractTypeOnly?: boolean;
     activeContractorOnly?: boolean;
+    activeBuyerOnly?: boolean;
   },
 ): Promise<
   | { ok: true; value: ContractDocumentWrite; departmentScopeId: string | null }
@@ -344,8 +345,23 @@ async function readContractDocumentWrite(
   if (dates.some((value) => value !== "" && !isIsoDate(value))) {
     return { ok: false, status: 400, message: "Некоректна дата" };
   }
-  if (validFrom && validTo && validFrom > validTo) {
-    return { ok: false, status: 400, message: "Початок дії не може бути пізніше за кінець" };
+  if (contractDate && validFrom && validFrom < contractDate) {
+    return { ok: false, status: 400, message: "Початок дії не може бути раніше за дату укладання" };
+  }
+  if (validFrom && validTo && validTo < validFrom) {
+    return { ok: false, status: 400, message: "Кінець дії не може бути раніше за початок дії" };
+  }
+  if (options?.activeBuyerOnly && buyerName) {
+    const buyerLookup = await lookupOptionalId(
+      `SELECT id::text AS id
+       FROM users
+       WHERE full_name = $1 AND role = 'buyer' AND is_active IS DISTINCT FROM false`,
+      buyerName,
+      "Оберіть ПІБ закупника",
+    );
+    if (!buyerLookup.ok) {
+      return { ok: false, status: 400, message: buyerLookup.message };
+    }
   }
   if (
     tooLong(tzResponsibleName, 255) ||
@@ -559,6 +575,7 @@ contractDocumentsRouter.post("/", requireAuth, manageProcurement, async (req, re
     activeProcedureOnly: true,
     activeContractTypeOnly: true,
     activeContractorOnly: true,
+    activeBuyerOnly: true,
   });
   if (!parsed.ok) {
     res.status(parsed.status).json({ message: parsed.message });
@@ -640,6 +657,27 @@ contractDocumentsRouter.patch("/:id", requireAuth, manageProcurement, async (req
   }
 
   const write = parsed.value;
+  if (write.buyerName) {
+    const currentBuyer = await pool.query<{ buyer_name: string }>(
+      `SELECT COALESCE(buyer_name, '') AS buyer_name
+       FROM contract_documents
+       WHERE id = $1::uuid`,
+      [id],
+    );
+    if ((currentBuyer.rows[0]?.buyer_name ?? "") !== write.buyerName) {
+      const buyerLookup = await lookupOptionalId(
+        `SELECT id::text AS id
+         FROM users
+         WHERE full_name = $1 AND role = 'buyer' AND is_active IS DISTINCT FROM false`,
+        write.buyerName,
+        "Оберіть ПІБ закупника",
+      );
+      if (!buyerLookup.ok) {
+        res.status(400).json({ message: buyerLookup.message });
+        return;
+      }
+    }
+  }
   const updated = await pool.query(
     `UPDATE contract_documents
      SET subject = $2,
@@ -717,7 +755,7 @@ function incompleteCreateMessage(write: ContractDocumentWrite): string {
     return "Вкажіть ПІБ кошторисника";
   }
   if (!write.buyerName) {
-    return "Вкажіть ПІБ закупника";
+    return "Оберіть ПІБ закупника";
   }
   if (!write.actualApplicationDate) {
     return "Вкажіть фактичний термін надання заявки";

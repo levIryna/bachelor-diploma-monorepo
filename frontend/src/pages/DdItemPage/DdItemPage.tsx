@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useContractors } from '../../api/contractors';
 import { useContractTypes, useProcurementProcedures } from '../../api/procurementDirectories';
 import { useDepartmentDirectory } from '../../api/departments';
+import { useBuyers } from '../../api/users';
 import {
   createContractDocument,
   deleteContractDocument,
@@ -39,40 +40,22 @@ function patchForm<K extends keyof DdFormData>(
   setter((prev) => ({ ...prev, [key]: value }));
 }
 
-function formatAmount(valueThousands: number): string {
-  const uah = Math.round(valueThousands * 1000);
-  const grouped = String(uah).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return `${grouped} грн`;
+function formatUahFromThousands(valueThousands: number): string {
+  const uah = String(Math.round(valueThousands * 1000));
+  return uah.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-function parseOptionalThousands(value: string): { ok: true; value: number | null } | { ok: false } {
-  const cleaned = value.trim().replace(/\s/g, '').replace(',', '.');
-  if (!cleaned) {
-    return { ok: true, value: null };
-  }
-  const parsed = Number(cleaned);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return { ok: false };
-  }
-  return { ok: true, value: parsed };
-}
-
-function parseOptionalAmountThousands(
+function parseOptionalUahThousands(
   value: string,
 ): { ok: true; value: number | null } | { ok: false } {
-  const cleaned = value.trim().replace(/грн/gi, '').replace(/\s/g, '').replace(',', '.');
+  const cleaned = value.replace(/грн/gi, '').replace(/\s/g, '');
   if (!cleaned) {
     return { ok: true, value: null };
   }
-  const uah = Number(cleaned);
-  if (!Number.isFinite(uah) || uah < 0) {
+  if (!/^\d+$/.test(cleaned)) {
     return { ok: false };
   }
-  return { ok: true, value: Math.round(uah) / 1000 };
-}
-
-function formatThousands(value: number): string {
-  return String(value);
+  return { ok: true, value: Number(cleaned) / 1000 };
 }
 
 function toForm(item: ContractDocumentDetail): DdFormData {
@@ -83,7 +66,7 @@ function toForm(item: ContractDocumentDetail): DdFormData {
     subject: item.subject,
     itemType: '',
     expectedCostThousands:
-      item.expectedCostThousands === null ? '' : formatThousands(item.expectedCostThousands),
+      item.expectedCostThousands === null ? '' : formatUahFromThousands(item.expectedCostThousands),
     procedure: item.procedure,
     initiatorDepartment: item.department,
     tzResponsibleName: item.tzResponsibleName,
@@ -96,7 +79,7 @@ function toForm(item: ContractDocumentDetail): DdFormData {
     contractor: item.contractor,
     contractSubject: item.contractSubject,
     contractAmount:
-      item.contractAmountThousands === null ? '' : formatAmount(item.contractAmountThousands),
+      item.contractAmountThousands === null ? '' : formatUahFromThousands(item.contractAmountThousands),
     contractDate: item.contractDate,
     contractType: item.contractType,
     validFrom: item.validFrom,
@@ -156,7 +139,7 @@ function ddFieldErrors(form: DdFormData, complete: boolean): DdFieldErrors {
     errors.estimatorName = 'Вкажіть ПІБ кошторисника.';
   }
   if (complete && !form.buyerName.trim()) {
-    errors.buyerName = 'Вкажіть ПІБ закупника.';
+    errors.buyerName = 'Оберіть ПІБ закупника.';
   }
   if (complete && !form.actualApplicationDate) {
     errors.actualApplicationDate = 'Вкажіть фактичний термін надання заявки.';
@@ -189,21 +172,24 @@ function ddFieldErrors(form: DdFormData, complete: boolean): DdFieldErrors {
     errors.notes = 'Вкажіть примітки.';
   }
 
-  const expectedCost = parseOptionalThousands(form.expectedCostThousands);
+  const expectedCost = parseOptionalUahThousands(form.expectedCostThousands);
   if (!expectedCost.ok || (complete && expectedCost.value === null)) {
     errors.expectedCostThousands = 'Вкажіть коректну очікувану вартість.';
   }
-  const amount = parseOptionalAmountThousands(form.contractAmount);
+  const amount = parseOptionalUahThousands(form.contractAmount);
   if (!amount.ok || (complete && amount.value === null)) {
     errors.contractAmount = 'Вкажіть коректну суму договору.';
   }
   if (
     !errors.validFrom &&
+    form.contractDate &&
     form.validFrom &&
-    form.validTo &&
-    form.validFrom > form.validTo
+    form.validFrom < form.contractDate
   ) {
-    errors.validFrom = 'Початок дії не може бути пізніше за кінець.';
+    errors.validFrom = 'Початок дії не може бути раніше за дату укладання.';
+  }
+  if (!errors.validTo && form.validFrom && form.validTo && form.validTo < form.validFrom) {
+    errors.validTo = 'Кінець дії не може бути раніше за початок дії.';
   }
   return errors;
 }
@@ -217,8 +203,8 @@ function focusFirstFieldError(errors: DdFieldErrors) {
 }
 
 function toUpdate(form: DdFormData): ContractDocumentUpdate {
-  const expectedCost = parseOptionalThousands(form.expectedCostThousands);
-  const amount = parseOptionalAmountThousands(form.contractAmount);
+  const expectedCost = parseOptionalUahThousands(form.expectedCostThousands);
+  const amount = parseOptionalUahThousands(form.contractAmount);
   return {
     subject: form.subject.trim(),
     expectedCostThousands: expectedCost.ok ? expectedCost.value : null,
@@ -297,6 +283,9 @@ export function DdItemPage() {
     useContractTypes(directoriesEnabled);
   const { data: contractors, isLoading: isContractorsQueryLoading } =
     useContractors(directoriesEnabled);
+  const buyersEnabled = directoriesEnabled && canEdit;
+  const { data: buyers, isLoading: isBuyersQueryLoading } = useBuyers(buyersEnabled);
+  const isBuyersLoading = buyersEnabled && isBuyersQueryLoading;
   const isDepartmentsLoading = !directoriesEnabled || isDepartmentsQueryLoading;
   const isProceduresLoading = !directoriesEnabled || isProceduresQueryLoading;
   const isContractTypesLoading = !directoriesEnabled || isContractTypesQueryLoading;
@@ -359,11 +348,18 @@ export function DdItemPage() {
 
   function setField<K extends keyof DdFormData>(key: K, value: DdFormData[K]) {
     setFieldErrors((current) => {
-      if (!(key in current)) {
+      const dateFields: DdErrorField[] =
+        key === 'contractDate' || key === 'validFrom' || key === 'validTo'
+          ? ['validFrom', 'validTo']
+          : [];
+      if (!(key in current) && dateFields.every((field) => !(field in current))) {
         return current;
       }
       const next = { ...current };
       delete next[key as DdErrorField];
+      for (const field of dateFields) {
+        delete next[field];
+      }
       return next;
     });
     if (isCreate) {
@@ -445,6 +441,16 @@ export function DdItemPage() {
     () => withCurrentOption(contractors, form.contractor),
     [contractors, form.contractor],
   );
+  const buyerItems = useMemo(() => {
+    const options = (buyers ?? []).map((buyer) => ({
+      value: buyer.fullName,
+      label: buyer.fullName,
+    }));
+    if (form.buyerName && !options.some((item) => item.value === form.buyerName)) {
+      options.unshift({ value: form.buyerName, label: form.buyerName });
+    }
+    return options;
+  }, [buyers, form.buyerName]);
 
   const pageTitle = useMemo(() => {
     if (isCreate) {
@@ -585,9 +591,11 @@ export function DdItemPage() {
           <FormSectionCard title="Заявка і процедура">
             <FormField
               id="dd-expectedCostThousands"
-              label="Очікувана вартість за заявкою, тис. грн"
+              label="Очікувана вартість за заявкою"
               value={form.expectedCostThousands}
               disabled={readOnly}
+              groupThousands
+              suffix="грн"
               error={fieldErrors.expectedCostThousands}
               onChange={(value) => setField('expectedCostThousands', value)}
             />
@@ -637,11 +645,14 @@ export function DdItemPage() {
               error={fieldErrors.estimatorName}
               onChange={(value) => setField('estimatorName', value)}
             />
-            <FormField
+            <FormSelect
               id="dd-buyerName"
               label="ПІБ закупника"
-              value={form.buyerName}
+              placeholder="Оберіть ПІБ закупника"
+              isLoading={isBuyersLoading}
               disabled={readOnly}
+              items={buyerItems}
+              value={form.buyerName}
               error={fieldErrors.buyerName}
               onChange={(value) => setField('buyerName', value)}
             />
@@ -694,9 +705,11 @@ export function DdItemPage() {
             />
             <FormField
               id="dd-contractAmount"
-              label="Сума договору, грн без ПДВ"
+              label="Сума договору, без ПДВ"
               value={form.contractAmount}
               disabled={readOnly}
+              groupThousands
+              suffix="грн"
               error={fieldErrors.contractAmount}
               onChange={(value) => setField('contractAmount', value)}
             />
