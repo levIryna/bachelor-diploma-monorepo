@@ -1,6 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   ConfirmDialog,
@@ -10,6 +10,7 @@ import {
   Loader,
 } from '../../components';
 import { useDepartmentDirectory } from '../../api/departments';
+import { useBuyers } from '../../api/users';
 import {
   useFundingSources,
   useIpNkrekpItems,
@@ -29,8 +30,9 @@ import {
   type ProcurementPlanItemDetail,
   type ProcurementPlanItemUpdate,
 } from '../../api/procurementPlanItems';
-import { useHasRole } from '../../hooks/useUserAccess';
+import { useCanEditProcurement, useHasRole } from '../../hooks/useUserAccess';
 import { ADMIN_ROLE } from '../../mocks/roles';
+import { readRpzListSearch } from '../RpzListPage/RpzListPage';
 import { paths } from '../../routes/paths';
 import { OPEN_PLAN_YEAR, PROCUREMENT_STATUS_LABEL } from '../../utils/constants';
 import { createEmptyRpzForm, type RpzFormData } from '../../types/rpzForm';
@@ -66,9 +68,8 @@ function statusLabel(status: string): string {
 }
 
 function formatCost(valueThousands: number): string {
-  const uah = Math.round(valueThousands * 1000);
-  const grouped = String(uah).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return `${grouped} грн`;
+  const uah = String(Math.round(valueThousands * 1000));
+  return uah.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function parseCostThousands(value: string): number | null {
@@ -83,23 +84,71 @@ function parseCostThousands(value: string): number | null {
   return Math.round(uah) / 1000;
 }
 
-function planItemValidationMessage(form: RpzFormData): string {
-  if (!form.subject.trim()) {
-    return 'Вкажіть предмет закупівлі.';
-  }
+const FIELD_ERROR_ORDER = [
+  'initiatorDepartment',
+  'headFullName',
+  'executorFullName',
+  'responsibleBuyer',
+  'status',
+  'subject',
+  'needType',
+  'procurementType',
+  'category',
+  'fundingSource',
+  'ipInkrekpItem',
+  'expectedCost',
+] as const;
+
+type PlanItemErrorField = (typeof FIELD_ERROR_ORDER)[number];
+type PlanItemFieldErrors = Partial<Record<PlanItemErrorField, string>>;
+
+function planItemFieldErrors(form: RpzFormData): PlanItemFieldErrors {
+  const errors: PlanItemFieldErrors = {};
   if (!form.initiatorDepartment.trim()) {
-    return 'Вкажіть підрозділ-ініціатор.';
+    errors.initiatorDepartment = 'Вкажіть підрозділ-ініціатор.';
   }
-  if (parseCostThousands(form.expectedCost) === null) {
-    return 'Вкажіть коректну очікувану вартість.';
+  if (!form.headFullName.trim()) {
+    errors.headFullName = 'Вкажіть ПІБ керівника підрозділу.';
   }
-  if (!form.needType) {
-    return 'Оберіть потребу.';
+  if (!form.executorFullName.trim()) {
+    errors.executorFullName = 'Вкажіть ПІБ виконавця від ініціатора.';
+  }
+  if (!form.responsibleBuyer.trim()) {
+    errors.responsibleBuyer = 'Оберіть відповідального закупника.';
   }
   if (!form.status) {
-    return 'Оберіть статус.';
+    errors.status = 'Оберіть статус.';
   }
-  return '';
+  if (!form.subject.trim()) {
+    errors.subject = 'Вкажіть предмет закупівлі.';
+  }
+  if (!form.needType) {
+    errors.needType = 'Оберіть потребу.';
+  }
+  if (!form.procurementType.trim()) {
+    errors.procurementType = 'Оберіть вид закупівлі.';
+  }
+  if (!form.category.trim()) {
+    errors.category = 'Оберіть категорію.';
+  }
+  if (!form.fundingSource.trim()) {
+    errors.fundingSource = 'Оберіть джерело фінансування.';
+  }
+  if (!form.ipInkrekpItem.trim()) {
+    errors.ipInkrekpItem = 'Оберіть пункт ІП.';
+  }
+  if (parseCostThousands(form.expectedCost) === null) {
+    errors.expectedCost = 'Вкажіть коректну очікувану вартість.';
+  }
+  return errors;
+}
+
+function focusFirstFieldError(errors: PlanItemFieldErrors) {
+  const field = FIELD_ERROR_ORDER.find((key) => errors[key]);
+  if (!field) {
+    return;
+  }
+  document.getElementById(`rpz-${field}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function toPlanItemUpdate(form: RpzFormData): ProcurementPlanItemUpdate {
@@ -154,9 +203,12 @@ function toForm(item: ProcurementPlanItemDetail): RpzFormData {
 
 export function RpzItemPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const listSearch = readRpzListSearch(location.state);
   const queryClient = useQueryClient();
   const { isAuthReady, isLoggedIn, user } = useAppContext();
   const isAdmin = useHasRole(ADMIN_ROLE);
+  const canEdit = useCanEditProcurement();
   const { id } = useParams<{ id: string }>();
   const isCreate = id === 'new';
   const { data: departmentDirectory, isLoading: isDepartmentsLoading } = useDepartmentDirectory(
@@ -168,6 +220,9 @@ export function RpzItemPage() {
   );
   const isStatusesLoading = !isAuthReady || isStatusesQueryLoading;
   const directoriesEnabled = isAuthReady && isLoggedIn;
+  const buyersEnabled = directoriesEnabled && canEdit;
+  const { data: buyers, isLoading: isBuyersQueryLoading } = useBuyers(buyersEnabled);
+  const isBuyersLoading = buyersEnabled && isBuyersQueryLoading;
   const { data: procurementKinds, isLoading: isKindsQueryLoading } =
     useProcurementKinds(directoriesEnabled);
   const { data: procurementCategories, isLoading: isCategoriesQueryLoading } =
@@ -188,6 +243,7 @@ export function RpzItemPage() {
   const [createForm, setCreateForm] = useState<RpzFormData>(createEmptyRpzForm);
   const [editDraft, setEditDraft] = useState<{ id: string; form: RpzFormData } | null>(null);
   const [saveError, setSaveError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<PlanItemFieldErrors>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
   const draft = editDraft && editDraft.id === id ? editDraft.form : null;
   const mode = draft ? 'edit' : 'view';
@@ -201,6 +257,7 @@ export function RpzItemPage() {
       await invalidateRpzQueries(queryClient);
       setEditDraft(null);
       setSaveError('');
+      setFieldErrors({});
     },
     onError: (error: unknown) => {
       setSaveError(error instanceof ApiError ? error.message : 'Не вдалося зберегти зміни.');
@@ -212,7 +269,8 @@ export function RpzItemPage() {
     onSuccess: async (created) => {
       await invalidateRpzQueries(queryClient);
       setSaveError('');
-      navigate(`${paths.rpz}/${created.id}`);
+      setFieldErrors({});
+      navigate(`${paths.rpz}/${created.id}`, { state: location.state });
     },
     onError: (error: unknown) => {
       setSaveError(error instanceof ApiError ? error.message : 'Не вдалося зберегти пункт РПЗ.');
@@ -224,15 +282,25 @@ export function RpzItemPage() {
     onSuccess: () => {
       setDeleteOpen(false);
       void queryClient.invalidateQueries({ queryKey: ['procurement_plan_items'] });
-      navigate(paths.rpz);
+      navigate({ pathname: paths.rpz, search: listSearch });
     },
   });
   const isDeleting = deleteItem.isPending;
   const readOnly = isCreate ? isCreating : mode !== 'edit' || isSaving;
   const isClosed = form.status === 'completed';
+  const hasContract = (contractDocuments?.length ?? 0) > 0;
+  const showPlannedDates = isCreate || (!isContractDocumentsLoading && !hasContract);
   const deleteError = deleteErrorMessage(deleteItem.error);
 
   function setField<K extends keyof RpzFormData>(key: K, value: RpzFormData[K]) {
+    setFieldErrors((current) => {
+      if (!(key in current)) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[key as PlanItemErrorField];
+      return next;
+    });
     if (isCreate) {
       patchForm(setCreateForm, key, value);
       return;
@@ -243,30 +311,51 @@ export function RpzItemPage() {
   }
 
   function startEdit() {
-    if (!planItem || !id) {
+    if (!canEdit || !planItem || !id) {
       return;
     }
     setEditDraft({ id, form: toForm(planItem) });
     setSaveError('');
+    setFieldErrors({});
   }
 
   function cancelEdit() {
     setEditDraft(null);
     setSaveError('');
+    setFieldErrors({});
+  }
+
+  function rejectInvalid(formData: RpzFormData): boolean {
+    setSaveError('');
+    const errors = planItemFieldErrors(formData);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length === 0) {
+      return false;
+    }
+    focusFirstFieldError(errors);
+    return true;
   }
 
   function saveEdit() {
-    if (!draft || !id) {
+    if (!draft || !id || !canEdit) {
       return;
     }
-    const message = planItemValidationMessage(draft);
-    if (message) {
-      setSaveError(message);
+    if (rejectInvalid(draft)) {
       return;
     }
-    setSaveError('');
     saveChanges.mutate(toPlanItemUpdate(draft));
   }
+
+  const buyerItems = useMemo(() => {
+    const options = (buyers ?? []).map((buyer) => ({
+      value: buyer.fullName,
+      label: buyer.fullName,
+    }));
+    if (form.responsibleBuyer && !options.some((item) => item.value === form.responsibleBuyer)) {
+      options.unshift({ value: form.responsibleBuyer, label: form.responsibleBuyer });
+    }
+    return options;
+  }, [buyers, form.responsibleBuyer]);
 
   const departmentItems = useMemo(() => {
     const options = (departmentDirectory ?? []).map((department) => ({
@@ -334,12 +423,12 @@ export function RpzItemPage() {
   }, [form.number, form.year, isCreate]);
 
   function saveCreate() {
-    const message = planItemValidationMessage(form);
-    if (message) {
-      setSaveError(message);
+    if (!canEdit) {
       return;
     }
-    setSaveError('');
+    if (rejectInvalid(form)) {
+      return;
+    }
     createItem.mutate({
       ...toPlanItemUpdate(form),
       year: Number(OPEN_PLAN_YEAR),
@@ -351,7 +440,7 @@ export function RpzItemPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Link
-            to={paths.rpz}
+            to={{ pathname: paths.rpz, search: listSearch }}
             className="inline-block text-sm font-medium text-[var(--color-brand-600)] hover:underline"
           >
             ← Назад до списку РПЗ
@@ -361,7 +450,7 @@ export function RpzItemPage() {
           </h1>
           {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
         </div>
-        {isCreate ? (
+        {isCreate && canEdit ? (
           <div className="flex shrink-0">
             <Button text="Зберегти" disabled={isCreating} onClick={saveCreate} />
           </div>
@@ -379,7 +468,7 @@ export function RpzItemPage() {
                 }}
               />
             ) : null}
-            {isClosed && !isAdmin ? (
+            {canEdit && isClosed && !isAdmin ? (
               <span className="group relative inline-flex">
                 <Button
                   text="Редагувати"
@@ -403,9 +492,9 @@ export function RpzItemPage() {
                   Ця закупівля не підлягає редагуванню, тому що вона вже завершена.
                 </span>
               </span>
-            ) : (
+            ) : canEdit ? (
               <Button text="Редагувати" icon="edit" onClick={startEdit} />
-            )}
+            ) : null}
           </div>
         ) : null}
         {!isCreate && mode === 'edit' ? (
@@ -416,7 +505,11 @@ export function RpzItemPage() {
         ) : null}
       </div>
 
-      {!isCreate && isLoading ? (
+      {isCreate && !canEdit ? (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Створювати пункти річного плану можуть лише адміністратор і закупівельник.
+        </p>
+      ) : !isCreate && isLoading ? (
         <div className="flex justify-center py-16">
           <Loader size={28} />
         </div>
@@ -435,95 +528,120 @@ export function RpzItemPage() {
               />
             ) : null}
             <FormSelect
+              id="rpz-initiatorDepartment"
               label="Підрозділ-ініціатор"
               placeholder="Оберіть підрозділ"
               isLoading={isDepartmentsLoading}
               disabled={readOnly}
               items={departmentItems}
               value={form.initiatorDepartment}
+              error={fieldErrors.initiatorDepartment}
               onChange={(v) => setField('initiatorDepartment', v)}
             />
             <FormField
+              id="rpz-headFullName"
               label="ПІБ керівника підрозділу"
               value={form.headFullName}
               disabled={readOnly}
+              error={fieldErrors.headFullName}
               onChange={(v) => setField('headFullName', v)}
             />
             <FormField
+              id="rpz-executorFullName"
               label="ПІБ виконавця від ініціатора"
               value={form.executorFullName}
               disabled={readOnly}
+              error={fieldErrors.executorFullName}
               onChange={(v) => setField('executorFullName', v)}
             />
           </FormSectionCard>
 
           <FormSectionCard title="Виконання">
-            <FormField
+            <FormSelect
+              id="rpz-responsibleBuyer"
               label="Відповідальний закупник"
-              value={form.responsibleBuyer}
+              placeholder="Оберіть закупника"
+              isLoading={isBuyersLoading}
               disabled={readOnly}
+              items={buyerItems}
+              value={form.responsibleBuyer}
+              error={fieldErrors.responsibleBuyer}
               onChange={(v) => setField('responsibleBuyer', v)}
             />
             <FormSelect
+              id="rpz-status"
               label="Статус"
               placeholder="Оберіть статус"
               isLoading={isStatusesLoading}
               disabled={readOnly}
               items={statusItems}
               value={form.status}
+              error={fieldErrors.status}
               onChange={(v) => setField('status', v)}
             />
           </FormSectionCard>
 
           <FormSectionCard title="Закупівля">
             <FormField
+              id="rpz-subject"
               label="Предмет закупівлі"
               value={form.subject}
               disabled={readOnly}
+              error={fieldErrors.subject}
               onChange={(v) => setField('subject', v)}
             />
             <FormSelect
+              id="rpz-needType"
               label="Потреба (щорічна / разова)"
               placeholder="Оберіть потребу"
               disabled={readOnly}
               items={NEED_TYPE_OPTIONS}
               value={form.needType}
+              error={fieldErrors.needType}
               onChange={(v) => setField('needType', v)}
             />
             <FormSelect
+              id="rpz-procurementType"
               label="Вид закупівлі"
               placeholder="Оберіть вид закупівлі"
               isLoading={isKindsLoading}
               disabled={readOnly}
               items={procurementKindItems}
               value={form.procurementType}
+              error={fieldErrors.procurementType}
               onChange={(v) => setField('procurementType', v)}
             />
             <FormSelect
+              id="rpz-category"
               label="Категорія"
               placeholder="Оберіть категорію"
               isLoading={isCategoriesLoading}
               disabled={readOnly}
               items={categoryItems}
               value={form.category}
+              error={fieldErrors.category}
               onChange={(v) => setField('category', v)}
             />
             <FormSelect
+              id="rpz-fundingSource"
               label="Джерело фінансування"
               placeholder="Оберіть джерело фінансування"
               isLoading={isFundingLoading}
               disabled={readOnly}
               items={fundingSourceItems}
               value={form.fundingSource}
+              error={fieldErrors.fundingSource}
               onChange={(v) => setField('fundingSource', v)}
             />
             <FormSelect
+              id="rpz-ipInkrekpItem"
               label="Пункт ІП ІНКРЕКП"
               placeholder="Оберіть пункт ІП"
               isLoading={isIpLoading}
               disabled={readOnly}
               items={ipNkrekpItemOptions}
               value={form.ipInkrekpItem}
+              error={fieldErrors.ipInkrekpItem}
               onChange={(v) => setField('ipInkrekpItem', v)}
             />
             <FormField
@@ -533,9 +651,13 @@ export function RpzItemPage() {
               onChange={(v) => setField('eventName', v)}
             />
             <FormField
+              id="rpz-expectedCost"
               label="Очікувана вартість"
               value={form.expectedCost}
               disabled={readOnly}
+              groupThousands
+              suffix="грн"
+              error={fieldErrors.expectedCost}
               onChange={(v) => setField('expectedCost', v)}
             />
           </FormSectionCard>
@@ -561,6 +683,7 @@ export function RpzItemPage() {
                       <li key={document.id}>
                         <Link
                           to={`${paths.procurements}/${document.id}`}
+                          state={{ rpzItemId: id, rpzListSearch: listSearch }}
                           className="block text-sm font-medium text-[var(--color-brand-600)] hover:underline"
                         >
                           {document.seqNumber !== null ? `№ ${document.seqNumber} · ` : ''}
@@ -578,7 +701,7 @@ export function RpzItemPage() {
                   </ul>
                 ) : null}
               </div>
-              {!isCreate && planItem && planItem.status !== 'completed' ? (
+              {!isCreate && canEdit && planItem && planItem.status !== 'completed' ? (
                 <button
                   type="button"
                   aria-label="Додати ДД"
@@ -596,7 +719,8 @@ export function RpzItemPage() {
             </div>
             {isClosed ? (
               <p className="text-sm text-[var(--color-text-muted)]">Закупівля завершена</p>
-            ) : (
+            ) : null}
+            {showPlannedDates ? (
               <>
                 <FormField
                   label="Планова дата подачі ТЗ"
@@ -620,7 +744,7 @@ export function RpzItemPage() {
                   onChange={(v) => setField('plannedWorkStartDate', v)}
                 />
               </>
-            )}
+            ) : null}
           </FormSectionCard>
         </div>
       )}

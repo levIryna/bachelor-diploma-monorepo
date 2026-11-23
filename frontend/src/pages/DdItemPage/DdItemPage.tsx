@@ -1,6 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useContractors } from '../../api/contractors';
 import { useContractTypes, useProcurementProcedures } from '../../api/procurementDirectories';
 import { useDepartmentDirectory } from '../../api/departments';
@@ -25,8 +25,9 @@ import {
   Loader,
 } from '../../components';
 import { useAppContext } from '../../context/app-context';
-import { useHasRole } from '../../hooks/useUserAccess';
+import { useCanEditProcurement, useHasRole } from '../../hooks/useUserAccess';
 import { ADMIN_ROLE } from '../../mocks/roles';
+import { readRpzListSearch } from '../RpzListPage/RpzListPage';
 import { paths } from '../../routes/paths';
 import { createEmptyDdForm, type DdFormData } from '../../types/ddForm';
 
@@ -105,100 +106,139 @@ function toForm(item: ContractDocumentDetail): DdFormData {
   };
 }
 
-function toUpdate(
-  form: DdFormData,
-  complete = false,
-): { ok: true; value: ContractDocumentUpdate } | { ok: false; message: string } {
+const FIELD_ERROR_ORDER = [
+  'subject',
+  'itemType',
+  'expectedCostThousands',
+  'procedure',
+  'initiatorDepartment',
+  'tzResponsibleName',
+  'technicalExpertName',
+  'estimatorName',
+  'buyerName',
+  'actualApplicationDate',
+  'procedureNumber',
+  'etmUrl',
+  'contractor',
+  'contractSubject',
+  'contractAmount',
+  'contractDate',
+  'contractType',
+  'validFrom',
+  'validTo',
+  'notes',
+] as const;
+
+type DdErrorField = (typeof FIELD_ERROR_ORDER)[number];
+type DdFieldErrors = Partial<Record<DdErrorField, string>>;
+
+function ddFieldErrors(form: DdFormData, complete: boolean): DdFieldErrors {
+  const errors: DdFieldErrors = {};
   if (!form.subject.trim()) {
-    return { ok: false, message: 'Вкажіть предмет закупівлі.' };
+    errors.subject = 'Вкажіть предмет закупівлі.';
   }
   if (complete && !form.itemType) {
-    return { ok: false, message: 'Оберіть тип предмета.' };
+    errors.itemType = 'Оберіть тип предмета.';
   }
   if (!form.procedure.trim()) {
-    return { ok: false, message: 'Оберіть вид процедури.' };
+    errors.procedure = 'Оберіть вид процедури.';
   }
   if (!form.initiatorDepartment.trim()) {
-    return { ok: false, message: 'Оберіть підрозділ ініціатора.' };
+    errors.initiatorDepartment = 'Оберіть підрозділ ініціатора.';
   }
   if (complete && !form.tzResponsibleName.trim()) {
-    return { ok: false, message: 'Вкажіть ПІБ відповідального за ТЗ.' };
+    errors.tzResponsibleName = 'Вкажіть ПІБ відповідального за ТЗ.';
   }
   if (complete && !form.technicalExpertName.trim()) {
-    return { ok: false, message: 'Вкажіть ПІБ технічного експерта.' };
+    errors.technicalExpertName = 'Вкажіть ПІБ технічного експерта.';
   }
   if (complete && !form.estimatorName.trim()) {
-    return { ok: false, message: 'Вкажіть ПІБ кошторисника.' };
+    errors.estimatorName = 'Вкажіть ПІБ кошторисника.';
   }
   if (complete && !form.buyerName.trim()) {
-    return { ok: false, message: 'Вкажіть ПІБ закупника.' };
+    errors.buyerName = 'Вкажіть ПІБ закупника.';
   }
   if (complete && !form.actualApplicationDate) {
-    return { ok: false, message: 'Вкажіть фактичний термін надання заявки.' };
+    errors.actualApplicationDate = 'Вкажіть фактичний термін надання заявки.';
   }
   if (complete && !form.procedureNumber.trim()) {
-    return { ok: false, message: 'Вкажіть номер процедури.' };
+    errors.procedureNumber = 'Вкажіть номер процедури.';
   }
   if (complete && !form.etmUrl.trim()) {
-    return { ok: false, message: 'Вкажіть посилання ЕТМ.' };
+    errors.etmUrl = 'Вкажіть посилання ЕТМ.';
   }
   if (complete && !form.contractor.trim()) {
-    return { ok: false, message: 'Оберіть контрагента.' };
+    errors.contractor = 'Оберіть контрагента.';
   }
   if (complete && !form.contractSubject.trim()) {
-    return { ok: false, message: 'Вкажіть предмет договору.' };
+    errors.contractSubject = 'Вкажіть предмет договору.';
   }
   if (complete && !form.contractDate) {
-    return { ok: false, message: 'Вкажіть дату укладання.' };
+    errors.contractDate = 'Вкажіть дату укладання.';
   }
   if (complete && !form.contractType.trim()) {
-    return { ok: false, message: 'Оберіть тип договору.' };
+    errors.contractType = 'Оберіть тип договору.';
   }
   if (complete && !form.validFrom) {
-    return { ok: false, message: 'Вкажіть початок дії.' };
+    errors.validFrom = 'Вкажіть початок дії.';
   }
   if (complete && !form.validTo) {
-    return { ok: false, message: 'Вкажіть кінець дії.' };
+    errors.validTo = 'Вкажіть кінець дії.';
   }
   if (complete && !form.notes.trim()) {
-    return { ok: false, message: 'Вкажіть примітки.' };
+    errors.notes = 'Вкажіть примітки.';
   }
 
   const expectedCost = parseOptionalThousands(form.expectedCostThousands);
   if (!expectedCost.ok || (complete && expectedCost.value === null)) {
-    return { ok: false, message: 'Вкажіть коректну очікувану вартість.' };
+    errors.expectedCostThousands = 'Вкажіть коректну очікувану вартість.';
   }
   const amount = parseOptionalAmountThousands(form.contractAmount);
   if (!amount.ok || (complete && amount.value === null)) {
-    return { ok: false, message: 'Вкажіть коректну суму договору.' };
+    errors.contractAmount = 'Вкажіть коректну суму договору.';
   }
-  if (form.validFrom && form.validTo && form.validFrom > form.validTo) {
-    return { ok: false, message: 'Початок дії не може бути пізніше за кінець.' };
+  if (
+    !errors.validFrom &&
+    form.validFrom &&
+    form.validTo &&
+    form.validFrom > form.validTo
+  ) {
+    errors.validFrom = 'Початок дії не може бути пізніше за кінець.';
   }
+  return errors;
+}
 
+function focusFirstFieldError(errors: DdFieldErrors) {
+  const field = FIELD_ERROR_ORDER.find((key) => errors[key]);
+  if (!field) {
+    return;
+  }
+  document.getElementById(`dd-${field}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function toUpdate(form: DdFormData): ContractDocumentUpdate {
+  const expectedCost = parseOptionalThousands(form.expectedCostThousands);
+  const amount = parseOptionalAmountThousands(form.contractAmount);
   return {
-    ok: true,
-    value: {
-      subject: form.subject.trim(),
-      expectedCostThousands: expectedCost.value,
-      procedure: form.procedure.trim(),
-      department: form.initiatorDepartment.trim(),
-      tzResponsibleName: form.tzResponsibleName.trim(),
-      technicalExpertName: form.technicalExpertName.trim(),
-      estimatorName: form.estimatorName.trim(),
-      buyerName: form.buyerName.trim(),
-      actualApplicationDate: form.actualApplicationDate,
-      procedureNumber: form.procedureNumber.trim(),
-      etmUrl: form.etmUrl.trim(),
-      contractor: form.contractor.trim(),
-      contractSubject: form.contractSubject.trim(),
-      contractAmountThousands: amount.value,
-      contractDate: form.contractDate,
-      contractType: form.contractType.trim(),
-      validFrom: form.validFrom,
-      validTo: form.validTo,
-      notes: form.notes.trim(),
-    },
+    subject: form.subject.trim(),
+    expectedCostThousands: expectedCost.ok ? expectedCost.value : null,
+    procedure: form.procedure.trim(),
+    department: form.initiatorDepartment.trim(),
+    tzResponsibleName: form.tzResponsibleName.trim(),
+    technicalExpertName: form.technicalExpertName.trim(),
+    estimatorName: form.estimatorName.trim(),
+    buyerName: form.buyerName.trim(),
+    actualApplicationDate: form.actualApplicationDate,
+    procedureNumber: form.procedureNumber.trim(),
+    etmUrl: form.etmUrl.trim(),
+    contractor: form.contractor.trim(),
+    contractSubject: form.contractSubject.trim(),
+    contractAmountThousands: amount.ok ? amount.value : null,
+    contractDate: form.contractDate,
+    contractType: form.contractType.trim(),
+    validFrom: form.validFrom,
+    validTo: form.validTo,
+    notes: form.notes.trim(),
   };
 }
 
@@ -210,6 +250,14 @@ const ITEM_TYPE_OPTIONS = [
 
 const PLAN_ITEM_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function readRpzItemId(state: unknown): string {
+  if (!state || typeof state !== 'object' || !('rpzItemId' in state)) {
+    return '';
+  }
+  const value = (state as { rpzItemId?: unknown }).rpzItemId;
+  return typeof value === 'string' && PLAN_ITEM_ID_PATTERN.test(value) ? value : '';
+}
+
 function withCurrentOption(names: readonly string[] | undefined, current: string) {
   const options = (names ?? []).map((name) => ({ value: name, label: name }));
   if (current && !options.some((item) => item.value === current)) {
@@ -220,9 +268,13 @@ function withCurrentOption(names: readonly string[] | undefined, current: string
 
 export function DdItemPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const rpzItemId = readRpzItemId(location.state);
+  const rpzListSearch = readRpzListSearch(location.state);
   const queryClient = useQueryClient();
   const { isAuthReady, isLoggedIn, user } = useAppContext();
   const isAdmin = useHasRole(ADMIN_ROLE);
+  const canEdit = useCanEditProcurement();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const isCreate = id === 'new';
@@ -252,6 +304,7 @@ export function DdItemPage() {
   const [createForm, setCreateForm] = useState<DdFormData>(createEmptyDdForm);
   const [editDraft, setEditDraft] = useState<{ id: string; form: DdFormData } | null>(null);
   const [saveError, setSaveError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<DdFieldErrors>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
   const draft = editDraft && editDraft.id === id ? editDraft.form : null;
   const mode = draft ? 'edit' : 'view';
@@ -263,6 +316,7 @@ export function DdItemPage() {
     onSuccess: async () => {
       await invalidateContractDocumentQueries(queryClient, planItemId);
       setSaveError('');
+      setFieldErrors({});
       navigate(`${paths.rpz}/${planItemId}`);
     },
     onError: (error: unknown) => {
@@ -276,6 +330,7 @@ export function DdItemPage() {
       await invalidateContractDocumentQueries(queryClient, id ?? '');
       setEditDraft(null);
       setSaveError('');
+      setFieldErrors({});
     },
     onError: (error: unknown) => {
       setSaveError(error instanceof ApiError ? error.message : 'Не вдалося зберегти зміни.');
@@ -298,11 +353,19 @@ export function DdItemPage() {
   const isDeleting = deleteDocument.isPending;
   const readOnly = isCreate ? isCreating : mode !== 'edit' || isSaving;
   const canCreate =
-    isCreate && hasPlanItemId && planItem !== undefined && planItem.status !== 'completed';
+    canEdit && isCreate && hasPlanItemId && planItem !== undefined && planItem.status !== 'completed';
   const rpzYearItem =
     isCreate && planItem ? `${planItem.year} · пункт ${planItem.lineNumber}` : form.rpzYearItem;
 
   function setField<K extends keyof DdFormData>(key: K, value: DdFormData[K]) {
+    setFieldErrors((current) => {
+      if (!(key in current)) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[key as DdErrorField];
+      return next;
+    });
     if (isCreate) {
       patchForm(setCreateForm, key, value);
       return;
@@ -313,43 +376,50 @@ export function DdItemPage() {
   }
 
   function startEdit() {
-    if (!document || !id) {
+    if (!canEdit || !document || !id) {
       return;
     }
     setEditDraft({ id, form: toForm(document) });
     setSaveError('');
+    setFieldErrors({});
   }
 
   function cancelEdit() {
     setEditDraft(null);
     setSaveError('');
+    setFieldErrors({});
+  }
+
+  function rejectInvalid(formData: DdFormData, complete: boolean): boolean {
+    setSaveError('');
+    const errors = ddFieldErrors(formData, complete);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length === 0) {
+      return false;
+    }
+    focusFirstFieldError(errors);
+    return true;
   }
 
   function saveEdit() {
-    if (!draft || !id) {
+    if (!draft || !id || !canEdit) {
       return;
     }
-    const parsed = toUpdate(draft);
-    if (!parsed.ok) {
-      setSaveError(parsed.message);
+    if (rejectInvalid(draft, false)) {
       return;
     }
-    setSaveError('');
-    saveChanges.mutate(parsed.value);
+    saveChanges.mutate(toUpdate(draft));
   }
 
   function saveCreate() {
     if (!canCreate || !planItem) {
       return;
     }
-    const parsed = toUpdate(form, true);
-    if (!parsed.ok) {
-      setSaveError(parsed.message);
+    if (rejectInvalid(form, true)) {
       return;
     }
-    setSaveError('');
     createDocument.mutate({
-      ...parsed.value,
+      ...toUpdate(form),
       planItemId,
       itemType: form.itemType,
     });
@@ -390,7 +460,15 @@ export function DdItemPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          {isCreate ? null : (
+          {isCreate ? null : rpzItemId ? (
+            <Link
+              to={`${paths.rpz}/${rpzItemId}`}
+              state={{ rpzListSearch }}
+              className="inline-block text-sm font-medium text-[var(--color-brand-600)] hover:underline"
+            >
+              ← Назад до пункту РПЗ
+            </Link>
+          ) : (
             <Link
               to={paths.procurements}
               className="inline-block text-sm font-medium text-[var(--color-brand-600)] hover:underline"
@@ -427,7 +505,7 @@ export function DdItemPage() {
                 }}
               />
             ) : null}
-            <Button text="Редагувати" icon="edit" onClick={startEdit} />
+            {canEdit ? <Button text="Редагувати" icon="edit" onClick={startEdit} /> : null}
           </div>
         ) : null}
         {!isCreate && mode === 'edit' ? (
@@ -448,6 +526,10 @@ export function DdItemPage() {
         </div>
       ) : isCreate && (isPlanItemError || !planItem) ? (
         <p className="text-sm text-[var(--color-text-muted)]">Не вдалося завантажити пункт РПЗ.</p>
+      ) : isCreate && !canEdit ? (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Додавати договори можуть лише адміністратор і закупівельник.
+        </p>
       ) : isCreate && planItem?.status === 'completed' ? (
         <p className="text-sm text-[var(--color-text-muted)]">
           До завершеної закупівлі не можна додати договір.
@@ -479,18 +561,22 @@ export function DdItemPage() {
               onChange={() => undefined}
             />
             <FormField
+              id="dd-subject"
               label="Предмет закупівлі"
               value={form.subject}
               disabled={readOnly}
+              error={fieldErrors.subject}
               onChange={(value) => setField('subject', value)}
             />
             {isCreate ? (
               <FormSelect
+                id="dd-itemType"
                 label="Тип предмета"
                 placeholder="Оберіть тип предмета"
                 disabled={readOnly}
                 items={ITEM_TYPE_OPTIONS}
                 value={form.itemType}
+                error={fieldErrors.itemType}
                 onChange={(value) => setField('itemType', value)}
               />
             ) : null}
@@ -498,130 +584,166 @@ export function DdItemPage() {
 
           <FormSectionCard title="Заявка і процедура">
             <FormField
+              id="dd-expectedCostThousands"
               label="Очікувана вартість за заявкою, тис. грн"
               value={form.expectedCostThousands}
               disabled={readOnly}
+              error={fieldErrors.expectedCostThousands}
               onChange={(value) => setField('expectedCostThousands', value)}
             />
             <FormSelect
+              id="dd-procedure"
               label="Вид процедури"
               placeholder="Оберіть процедуру"
               isLoading={isProceduresLoading}
               disabled={readOnly}
               items={procedureItems}
               value={form.procedure}
+              error={fieldErrors.procedure}
               onChange={(value) => setField('procedure', value)}
             />
             <FormSelect
+              id="dd-initiatorDepartment"
               label="Підрозділ ініціатора"
               placeholder="Оберіть підрозділ"
               isLoading={isDepartmentsLoading}
               disabled={readOnly}
               items={departmentItems}
               value={form.initiatorDepartment}
+              error={fieldErrors.initiatorDepartment}
               onChange={(value) => setField('initiatorDepartment', value)}
             />
             <FormField
+              id="dd-tzResponsibleName"
               label="ПІБ відповідального за ТЗ"
               value={form.tzResponsibleName}
               disabled={readOnly}
+              error={fieldErrors.tzResponsibleName}
               onChange={(value) => setField('tzResponsibleName', value)}
             />
             <FormField
+              id="dd-technicalExpertName"
               label="ПІБ технічного експерта"
               value={form.technicalExpertName}
               disabled={readOnly}
+              error={fieldErrors.technicalExpertName}
               onChange={(value) => setField('technicalExpertName', value)}
             />
             <FormField
+              id="dd-estimatorName"
               label="ПІБ кошторисника"
               value={form.estimatorName}
               disabled={readOnly}
+              error={fieldErrors.estimatorName}
               onChange={(value) => setField('estimatorName', value)}
             />
             <FormField
+              id="dd-buyerName"
               label="ПІБ закупника"
               value={form.buyerName}
               disabled={readOnly}
+              error={fieldErrors.buyerName}
               onChange={(value) => setField('buyerName', value)}
             />
             <FormField
+              id="dd-actualApplicationDate"
               label="Фактичний термін надання заявки"
               type="date"
               value={form.actualApplicationDate}
               disabled={readOnly}
+              error={fieldErrors.actualApplicationDate}
               onChange={(value) => setField('actualApplicationDate', value)}
             />
             <FormField
+              id="dd-procedureNumber"
               label="Номер процедури"
               value={form.procedureNumber}
               disabled={readOnly}
+              error={fieldErrors.procedureNumber}
               onChange={(value) => setField('procedureNumber', value)}
             />
             <FormField
+              id="dd-etmUrl"
               label="Посилання ЕТМ"
               value={form.etmUrl}
               disabled={readOnly}
+              error={fieldErrors.etmUrl}
               onChange={(value) => setField('etmUrl', value)}
             />
           </FormSectionCard>
 
           <FormSectionCard title="Договір">
             <FormSelect
+              id="dd-contractor"
               label="Контрагент"
               placeholder="Оберіть контрагента"
               isLoading={isContractorsLoading}
               disabled={readOnly}
               items={contractorItems}
               value={form.contractor}
+              error={fieldErrors.contractor}
               onChange={(value) => setField('contractor', value)}
             />
             <FormField
+              id="dd-contractSubject"
               label="Предмет договору"
               value={form.contractSubject}
               disabled={readOnly}
+              error={fieldErrors.contractSubject}
               onChange={(value) => setField('contractSubject', value)}
             />
             <FormField
+              id="dd-contractAmount"
               label="Сума договору, грн без ПДВ"
               value={form.contractAmount}
               disabled={readOnly}
+              error={fieldErrors.contractAmount}
               onChange={(value) => setField('contractAmount', value)}
             />
             <FormField
+              id="dd-contractDate"
               label="Дата укладання"
               type="date"
               value={form.contractDate}
               disabled={readOnly}
+              error={fieldErrors.contractDate}
               onChange={(value) => setField('contractDate', value)}
             />
             <FormSelect
+              id="dd-contractType"
               label="Тип договору"
               placeholder="Оберіть тип договору"
               isLoading={isContractTypesLoading}
               disabled={readOnly}
               items={contractTypeItems}
               value={form.contractType}
+              error={fieldErrors.contractType}
               onChange={(value) => setField('contractType', value)}
             />
             <FormField
+              id="dd-validFrom"
               label="Початок дії"
               type="date"
               value={form.validFrom}
               disabled={readOnly}
+              error={fieldErrors.validFrom}
               onChange={(value) => setField('validFrom', value)}
             />
             <FormField
+              id="dd-validTo"
               label="Кінець дії"
               type="date"
               value={form.validTo}
               disabled={readOnly}
+              error={fieldErrors.validTo}
               onChange={(value) => setField('validTo', value)}
             />
             <FormField
+              id="dd-notes"
               label="Примітки"
               value={form.notes}
               disabled={readOnly}
+              error={fieldErrors.notes}
               onChange={(value) => setField('notes', value)}
             />
             {isCreate ? null : (

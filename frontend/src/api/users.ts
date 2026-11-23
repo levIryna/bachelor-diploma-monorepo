@@ -48,6 +48,23 @@ export function useManagedUsers(enabled = true) {
   });
 }
 
+export type BuyerOption = {
+  id: string;
+  fullName: string;
+};
+
+function getBuyers(): Promise<BuyerOption[]> {
+  return apiClient<BuyerOption[]>('/users/buyers');
+}
+
+export function useBuyers(enabled = true) {
+  return useQuery({
+    queryKey: ['users', 'buyers'],
+    queryFn: getBuyers,
+    enabled,
+  });
+}
+
 function getUser(id: string): Promise<ManagedUser> {
   return apiClient<ManagedUser>(`/users/${id}`);
 }

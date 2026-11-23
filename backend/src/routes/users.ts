@@ -173,6 +173,23 @@ async function countOtherActiveAdmins(userId: string): Promise<number> {
   return Number(result.rows[0]?.count ?? 0);
 }
 
+const readBuyers = requireRole("admin", "buyer");
+
+usersRouter.get("/buyers", requireAuth, readBuyers, async (_req, res) => {
+  const result = await pool.query<{ id: string; full_name: string }>(
+    `SELECT id::text AS id, full_name
+     FROM users
+     WHERE role = 'buyer' AND is_active IS DISTINCT FROM false
+     ORDER BY full_name`,
+  );
+  res.status(200).json(
+    result.rows.map((row) => ({
+      id: row.id,
+      fullName: row.full_name,
+    })),
+  );
+});
+
 usersRouter.get("/manage", requireAuth, manageUsers, async (_req, res) => {
   const result = await pool.query<UserRow>(
     `${managedUserSelect}

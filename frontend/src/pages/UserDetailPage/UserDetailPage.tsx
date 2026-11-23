@@ -12,6 +12,7 @@ import {
   type UserFieldPatch,
 } from '../../api/users';
 import { BigCard, BlockedHint, Button, ConfirmDialog, Loader } from '../../components';
+import { PasswordInput } from '../../components/FormField/FormField';
 import { ADMIN_ROLE, BUYER_ROLE, DEPARTMENT_HEAD_ROLE, getRoleLabel } from '../../mocks/roles';
 import { paths } from '../../routes/paths';
 
@@ -362,42 +363,42 @@ export function UserDetailPage() {
             {editing === 'password' ? (
               <>
                 <DialogField label="Новий пароль">
-                  <input
+                  <PasswordInput
                     autoFocus
-                    type="password"
                     value={password}
                     autoComplete="new-password"
                     disabled={pending}
+                    invalid={formError.length > 0}
                     className={fieldClass(formError.length > 0)}
-                    onChange={(event) => {
+                    onChange={(value) => {
                       setFormError('');
-                      setPassword(event.target.value);
+                      setPassword(value);
                     }}
                   />
                 </DialogField>
                 <DialogField label="Підтвердження пароля">
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={passwordConfirm}
                     autoComplete="new-password"
                     disabled={pending}
+                    invalid={formError.length > 0}
                     className={fieldClass(formError.length > 0)}
-                    onChange={(event) => {
+                    onChange={(value) => {
                       setFormError('');
-                      setPasswordConfirm(event.target.value);
+                      setPasswordConfirm(value);
                     }}
                   />
                 </DialogField>
                 <DialogField label="Пароль адміністратора">
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={adminPassword}
                     autoComplete="current-password"
                     disabled={pending}
+                    invalid={formError.length > 0}
                     className={fieldClass(formError.length > 0)}
-                    onChange={(event) => {
+                    onChange={(value) => {
                       setFormError('');
-                      setAdminPassword(event.target.value);
+                      setAdminPassword(value);
                     }}
                   />
                 </DialogField>

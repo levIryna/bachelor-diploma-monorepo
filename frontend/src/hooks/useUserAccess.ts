@@ -14,3 +14,8 @@ export function useCanSelectDepartment(): boolean {
   const role = useUserRole();
   return role === ADMIN_ROLE || role === BUYER_ROLE;
 }
+
+export function useCanEditProcurement(): boolean {
+  const role = useUserRole();
+  return role === ADMIN_ROLE || role === BUYER_ROLE;
+}

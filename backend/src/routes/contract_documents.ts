@@ -534,7 +534,9 @@ async function insertContractDocument(
   }
 }
 
-contractDocumentsRouter.post("/", requireAuth, async (req, res) => {
+const manageProcurement = requireRole("admin", "buyer");
+
+contractDocumentsRouter.post("/", requireAuth, manageProcurement, async (req, res) => {
   const record = req.body;
   if (!record || typeof record !== "object" || Array.isArray(record)) {
     res.status(400).json({ message: "Некоректні дані" });
@@ -618,7 +620,7 @@ contractDocumentsRouter.get("/:id", requireAuth, async (req, res) => {
   res.status(200).json(document);
 });
 
-contractDocumentsRouter.patch("/:id", requireAuth, async (req, res) => {
+contractDocumentsRouter.patch("/:id", requireAuth, manageProcurement, async (req, res) => {
   const id = documentId(req.params.id);
   if (!id) {
     res.status(400).json({ message: "Некоректний ідентифікатор" });

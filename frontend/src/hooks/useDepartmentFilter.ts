@@ -4,7 +4,7 @@ import { useAppContext } from '../context/app-context';
 import { useCanSelectDepartment } from './useUserAccess';
 
 /** Same department list as the main page: all units for admin and buyer, own unit locked for a department head. */
-export function useDepartmentFilter() {
+export function useDepartmentFilter(initialChoice = 'all') {
   const { isLoggedIn, user } = useAppContext();
   const canSelectDepartment = useCanSelectDepartment();
   const departmentLocked = isLoggedIn && !canSelectDepartment;
@@ -12,7 +12,7 @@ export function useDepartmentFilter() {
     isLoggedIn,
     user?.id,
   );
-  const [departmentChoice, setDepartment] = useState('all');
+  const [departmentChoice, setDepartment] = useState(initialChoice);
   const departmentItems = useMemo(() => {
     const options = (departmentDirectory ?? []).map((department) => ({
       value: department.id,

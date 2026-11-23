@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Divider, Dropdown, Loader, SearchField } from '../../components';
 import { useProcurementPlanItems } from '../../api/procurementPlanItems';
 import { useProcurementStatusValues } from '../../api/procurementStatusValues';
 import { useAppContext } from '../../context/app-context';
 import { useDepartmentFilter } from '../../hooks/useDepartmentFilter';
+import { useCanEditProcurement } from '../../hooks/useUserAccess';
 import { useYearFilter } from '../../hooks/useYearFilter';
 import { paths } from '../../routes/paths';
 import { OPEN_PLAN_YEAR, PROCUREMENT_STATUS_LABEL } from '../../utils/constants';
@@ -42,10 +43,25 @@ function formatCost(valueThousands: number): string {
   return `${grouped} грн`;
 }
 
+export function readRpzListSearch(state: unknown): string {
+  if (!state || typeof state !== 'object' || !('rpzListSearch' in state)) {
+    return '';
+  }
+  const value = (state as { rpzListSearch?: unknown }).rpzListSearch;
+  return typeof value === 'string' ? value : '';
+}
+
 export function RpzListPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthReady, isLoggedIn } = useAppContext();
-  const { selectedYear, setYear, yearItems, isYearsLoading } = useYearFilter();
+  const canEdit = useCanEditProcurement();
+  const { selectedYear: defaultYear, yearItems, isYearsLoading } = useYearFilter();
+  const yearFromUrl = searchParams.get('year') ?? '';
+  const selectedYear =
+    yearFromUrl && (isYearsLoading || yearItems.some((item) => item.value === yearFromUrl))
+      ? yearFromUrl
+      : defaultYear;
   const {
     departmentItems,
     setDepartment,
@@ -54,13 +70,34 @@ export function RpzListPage() {
     departmentLocked,
     isDepartmentsLoading,
     departmentValue,
-  } = useDepartmentFilter();
+  } = useDepartmentFilter(searchParams.get('department') ?? 'all');
   const { data: statuses, isLoading: isStatusesQueryLoading } = useProcurementStatusValues(
     isAuthReady && isLoggedIn,
   );
   const isStatusesLoading = !isAuthReady || isStatusesQueryLoading;
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState(searchParams.get('status') ?? 'all');
   const [search, setSearch] = useState('');
+
+  function rememberFilters(patch: Record<string, string | null>) {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        for (const [key, value] of Object.entries(patch)) {
+          if (value) {
+            next.set(key, value);
+          } else {
+            next.delete(key);
+          }
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  function openPlanItem(id: string) {
+    navigate(`${paths.rpz}/${id}`, { state: { rpzListSearch: searchParams.toString() } });
+  }
 
   const statusItems = useMemo(() => {
     const options = (statuses ?? []).map((item) => ({
@@ -95,8 +132,8 @@ export function RpzListPage() {
         <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
           Річний план закупівель
         </h1>
-        {selectedYear === OPEN_PLAN_YEAR ? (
-          <Button text="Додати новий пункт РПЗ" onClick={() => navigate(`${paths.rpz}/new`)} />
+        {canEdit && selectedYear === OPEN_PLAN_YEAR ? (
+          <Button text="Додати новий пункт РПЗ" onClick={() => openPlanItem('new')} />
         ) : null}
       </div>
 
@@ -107,7 +144,7 @@ export function RpzListPage() {
           items={yearItems}
           value={selectedYear}
           onChange={(value) => {
-            setYear(value);
+            rememberFilters({ year: value && value !== defaultYear ? value : null });
             setSearch('');
           }}
         />
@@ -119,6 +156,7 @@ export function RpzListPage() {
           value={departmentValue}
           onChange={(value) => {
             setDepartment(value);
+            rememberFilters({ department: !departmentLocked && value !== 'all' ? value : null });
             setSearch('');
           }}
         />
@@ -129,6 +167,7 @@ export function RpzListPage() {
           value={statusValue}
           onChange={(value) => {
             setStatus(value);
+            rememberFilters({ status: value !== 'all' ? value : null });
             setSearch('');
           }}
         />
@@ -220,7 +259,7 @@ export function RpzListPage() {
                     <Button
                       variant="secondary"
                       text="Деталі"
-                      onClick={() => navigate(`${paths.rpz}/${row.id}`)}
+                      onClick={() => openPlanItem(row.id)}
                     />
                   </td>
                 </tr>

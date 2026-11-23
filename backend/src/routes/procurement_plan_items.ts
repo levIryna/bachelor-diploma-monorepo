@@ -249,8 +249,32 @@ async function readPlanItemWrite(
     return { ok: false, status: 400, message: "Некоректні дані" };
   }
 
+  if (!department) {
+    return { ok: false, status: 400, message: "Вкажіть підрозділ-ініціатор" };
+  }
+  if (!headFullName) {
+    return { ok: false, status: 400, message: "Вкажіть ПІБ керівника підрозділу" };
+  }
+  if (!executorFullName) {
+    return { ok: false, status: 400, message: "Вкажіть ПІБ виконавця від ініціатора" };
+  }
+  if (!buyer) {
+    return { ok: false, status: 400, message: "Оберіть відповідального закупника" };
+  }
   if (!subject) {
     return { ok: false, status: 400, message: "Вкажіть предмет закупівлі" };
+  }
+  if (!procurementKind) {
+    return { ok: false, status: 400, message: "Оберіть вид закупівлі" };
+  }
+  if (!category) {
+    return { ok: false, status: 400, message: "Оберіть категорію" };
+  }
+  if (!fundingSource) {
+    return { ok: false, status: 400, message: "Оберіть джерело фінансування" };
+  }
+  if (!ipItem) {
+    return { ok: false, status: 400, message: "Оберіть пункт ІП" };
   }
 
   const dates = [completionDate, plannedTzSubmitDate, plannedContractDate, plannedWorkStartDate];
@@ -354,7 +378,9 @@ async function readPlanItemWrite(
   }
 
   const buyerLookup = await lookupOptionalId(
-    `SELECT id::text AS id FROM users WHERE full_name = $1`,
+    `SELECT id::text AS id
+     FROM users
+     WHERE full_name = $1 AND role = 'buyer' AND is_active IS DISTINCT FROM false`,
     buyer,
     "Закупника не знайдено",
   );
@@ -535,7 +561,9 @@ procurementPlanItemsRouter.get("/:id/contract_documents", requireAuth, async (re
   );
 });
 
-procurementPlanItemsRouter.post("/", requireAuth, async (req, res) => {
+const manageProcurement = requireRole("admin", "buyer");
+
+procurementPlanItemsRouter.post("/", requireAuth, manageProcurement, async (req, res) => {
   const body = req.body;
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     res.status(400).json({ message: "Некоректні дані" });
@@ -578,7 +606,7 @@ procurementPlanItemsRouter.post("/", requireAuth, async (req, res) => {
   }
 });
 
-procurementPlanItemsRouter.patch("/:id", requireAuth, async (req, res) => {
+procurementPlanItemsRouter.patch("/:id", requireAuth, manageProcurement, async (req, res) => {
   const id = planItemId(req.params.id);
   if (!id) {
     res.status(400).json({ message: "Некоректний ідентифікатор пункту РПЗ" });
