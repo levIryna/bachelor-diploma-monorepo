@@ -40,22 +40,28 @@ function patchForm<K extends keyof DdFormData>(
   setter((prev) => ({ ...prev, [key]: value }));
 }
 
-function formatUahFromThousands(valueThousands: number): string {
-  const uah = String(Math.round(valueThousands * 1000));
-  return uah.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+function formatThousands(valueThousands: number): string {
+  const [whole, fraction = ''] = Math.abs(valueThousands).toFixed(3).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const trimmedFraction = fraction.replace(/0+$/, '');
+  return trimmedFraction ? `${grouped},${trimmedFraction}` : grouped;
 }
 
 function parseOptionalUahThousands(
   value: string,
 ): { ok: true; value: number | null } | { ok: false } {
-  const cleaned = value.replace(/грн/gi, '').replace(/\s/g, '');
+  const cleaned = value
+    .replace(/тис\.?/gi, '')
+    .replace(/грн/gi, '')
+    .replace(/\s/g, '')
+    .replace(',', '.');
   if (!cleaned) {
     return { ok: true, value: null };
   }
-  if (!/^\d+$/.test(cleaned)) {
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) {
     return { ok: false };
   }
-  return { ok: true, value: Number(cleaned) / 1000 };
+  return { ok: true, value: Number(cleaned) };
 }
 
 function toForm(item: ContractDocumentDetail): DdFormData {
@@ -66,7 +72,7 @@ function toForm(item: ContractDocumentDetail): DdFormData {
     subject: item.subject,
     itemType: '',
     expectedCostThousands:
-      item.expectedCostThousands === null ? '' : formatUahFromThousands(item.expectedCostThousands),
+      item.expectedCostThousands === null ? '' : formatThousands(item.expectedCostThousands),
     procedure: item.procedure,
     initiatorDepartment: item.department,
     tzResponsibleName: item.tzResponsibleName,
@@ -79,7 +85,7 @@ function toForm(item: ContractDocumentDetail): DdFormData {
     contractor: item.contractor,
     contractSubject: item.contractSubject,
     contractAmount:
-      item.contractAmountThousands === null ? '' : formatUahFromThousands(item.contractAmountThousands),
+      item.contractAmountThousands === null ? '' : formatThousands(item.contractAmountThousands),
     contractDate: item.contractDate,
     contractType: item.contractType,
     validFrom: item.validFrom,
@@ -595,7 +601,7 @@ export function DdItemPage() {
               value={form.expectedCostThousands}
               disabled={readOnly}
               groupThousands
-              suffix="грн"
+              suffix="тис. грн"
               error={fieldErrors.expectedCostThousands}
               onChange={(value) => setField('expectedCostThousands', value)}
             />
@@ -709,7 +715,7 @@ export function DdItemPage() {
               value={form.contractAmount}
               disabled={readOnly}
               groupThousands
-              suffix="грн"
+              suffix="тис. грн"
               error={fieldErrors.contractAmount}
               onChange={(value) => setField('contractAmount', value)}
             />

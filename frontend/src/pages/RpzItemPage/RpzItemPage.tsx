@@ -68,20 +68,30 @@ function statusLabel(status: string): string {
 }
 
 function formatCost(valueThousands: number): string {
-  const uah = String(Math.round(valueThousands * 1000));
-  return uah.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const [whole, fraction = ''] = Math.abs(valueThousands).toFixed(3).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const trimmedFraction = fraction.replace(/0+$/, '');
+  return trimmedFraction ? `${grouped},${trimmedFraction}` : grouped;
 }
 
 function parseCostThousands(value: string): number | null {
-  const cleaned = value.trim().replace(/грн/gi, '').replace(/\s/g, '').replace(',', '.');
+  const cleaned = value
+    .trim()
+    .replace(/тис\.?/gi, '')
+    .replace(/грн/gi, '')
+    .replace(/\s/g, '')
+    .replace(',', '.');
   if (!cleaned) {
     return null;
   }
-  const uah = Number(cleaned);
-  if (!Number.isFinite(uah) || uah < 0) {
+  if (!/^\d+(\.\d+)?$/.test(cleaned)) {
     return null;
   }
-  return Math.round(uah) / 1000;
+  const thousands = Number(cleaned);
+  if (!Number.isFinite(thousands) || thousands < 0) {
+    return null;
+  }
+  return thousands;
 }
 
 const FIELD_ERROR_ORDER = [
@@ -656,7 +666,7 @@ export function RpzItemPage() {
               value={form.expectedCost}
               disabled={readOnly}
               groupThousands
-              suffix="грн"
+              suffix="тис. грн"
               error={fieldErrors.expectedCost}
               onChange={(v) => setField('expectedCost', v)}
             />

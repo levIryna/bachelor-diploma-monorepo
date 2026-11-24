@@ -3,10 +3,17 @@ import { useState } from 'react';
 const EMPTY_FIELD_MARK = 'н/д';
 
 function groupThousands(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  const withoutLeadingZeros = digits.replace(/^0+/, '');
-  const shown = withoutLeadingZeros || (digits ? '0' : '');
-  return shown.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const compact = value.replace(/\s/g, '').replace(',', '.');
+  const match = compact.match(/^(\d*)(?:\.(\d*))?/);
+  const intRaw = match?.[1] ?? '';
+  const fractionRaw = match?.[2];
+  const hasFraction = compact.includes('.');
+  const intDigits = intRaw.replace(/^0+(?=\d)/, '');
+  const shownInt = (intDigits || (intRaw ? '0' : '')).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  if (!hasFraction) {
+    return shownInt;
+  }
+  return `${shownInt || '0'},${(fractionRaw ?? '').slice(0, 3)}`;
 }
 
 function caretAfterDigits(grouped: string, digitCount: number): number {
@@ -236,7 +243,7 @@ export function FormField({
     invalid
       ? 'border-red-600 focus:ring-red-600'
       : 'border-[var(--color-border)] focus:ring-[var(--color-focus-ring)]',
-    suffix ? 'pr-12' : '',
+    suffix ? (suffix.length > 4 ? 'pr-24' : 'pr-12') : '',
     disabled
       ? 'cursor-not-allowed bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]'
       : 'bg-[var(--color-surface)]',
