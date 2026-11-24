@@ -18,14 +18,12 @@ export const PROCUREMENT_STATUS_LABEL = {
   completed: 'Завершено',
 } as const;
 
-export const UKR_CURRECY = 'грн';
-
 export const KPI_CARDS_METRIC = {
-  planed_sum: UKR_CURRECY,
+  planed_sum: 'тис. грн',
   planed_amount: '',
   signed_contracts: '',
-  contacts_total_sum: UKR_CURRECY,
-  total_savings: UKR_CURRECY,
+  contacts_total_sum: 'тис. грн',
+  total_savings: 'тис. грн',
   average_savings: '%',
   purchases_in_progress: '',
   in_risk: '',
